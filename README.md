@@ -1,5 +1,5 @@
-# Finsim AI
-### AI-Powered Investment Learning and Market Simulator (Version 2)
+# Invest_iq
+### AI-Powered Investment Learning and Market Simulator 
 **Author:** Aravind, B.Tech CSE (AI & ML), Siddhartha Institute of Technology & Sciences
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -21,7 +21,7 @@
 
 ## 1. Executive Summary
 
-Finsim AI is a web platform where users **practice investing with virtual money** while an AI explains real market behavior in plain English. It is explicitly an **education and simulation tool** — not a real trading system, not investment advice, and not a SEBI-regulated advisory product.
+Invest_iq is a web platform where users **practice investing with virtual money** while an AI explains real market behavior in plain English. It is explicitly an **education and simulation tool** — not a real trading system, not investment advice, and not a SEBI-regulated advisory product.
 
 > **One-line description:**  
 > *An AI that watches real stock market data, teaches concepts using real examples, and lets users practice buying/selling with virtual money — so they understand investing before ever risking real money.*
