@@ -1,4 +1,4 @@
-# Finsim AI
+# Invest iq
 ### AI-Powered Investment Learning and Market Simulator
 **Version 2**
 
