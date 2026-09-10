@@ -12,7 +12,7 @@
 
 ## 📌 Quick Access & Project Documentation
 
-- 📑 **Official PDF Overview**: [`Project Overview/Finsim_AI_Project_Overview.pdf`](./Project%20Overview/Finsim_AI_Project_Overview.pdf) *(and [`Invest_IQ_Project_Overview.pdf`](./Invest_IQ_Project_Overview.pdf))*
+- 📑 **Official PDF Overview**: [`Project Overview/Invest_iq_Project_Overview.pdf`](./Project%20Overview/Invest_iq_Project_Overview.pdf) *(and [`Invest_IQ_Project_Overview.pdf`](./Invest_IQ_Project_Overview.pdf))*
 - 📄 **Complete Project Overview (Markdown)**: [`Project Overview/PROJECT_OVERVIEW.md`](./Project%20Overview/PROJECT_OVERVIEW.md)
 - 📁 **Project Folder Structure Map**: [`Project Folder Structure Overview/PROJECT_FOLDER_STRUCTURE_OVERVIEW.md`](./Project%20Folder%20Structure%20Overview/PROJECT_FOLDER_STRUCTURE_OVERVIEW.md)
 - 🚀 **Cloud Deployment Guide**: [`DEPLOYMENT.md`](./DEPLOYMENT.md)
