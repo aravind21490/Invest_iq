@@ -1,0 +1,14 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "venv",
+    "frontend"
+  ],
+  "venvPath": ".",
+  "venv": "venv",
+  "extraPaths": [
+    "venv/Lib/site-packages"
+  ]
+}

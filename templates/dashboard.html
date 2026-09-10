@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Market Dashboard — Invest IQ Simulator{% endblock %}
+
+{% block content %}
+<!-- Market Regime Selector Bar -->
+<section style="margin-bottom: 2rem;">
+  <div class="section-header" style="margin-bottom: 1rem;">
+    <div>
+      <h1>Virtual Market Simulator</h1>
+      <p class="section-subtitle">Real NSE market data • Grounded AI technical explanations • ₹1,00,000 Virtual Capital</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <span style="font-size: 0.76rem; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase;">ACTIVE REGIME:</span>
+      <span class="badge badge-indigo">{{ current_regime_info.title }}</span>
+    </div>
+  </div>
+
+  <!-- Regime Pills -->
+  <div class="regime-pill-bar" role="tablist" aria-label="Market Regime Slices">
+    {% for reg_key, reg in market_regimes.items() %}
+      <a href="{{ url_for('dashboard_route', regime=reg_key) }}" 
+         class="regime-tab {% if active_regime == reg_key %}active{% endif %}"
+         title="{{ reg.description }}">
+        {% if reg_key == 'current' %}🟢{% elif reg_key == 'covid_crash_2020' %}💥{% elif reg_key == 'post_covid_bull_2021' %}🚀{% else %}⚖️{% endif %}
+        {{ reg.title }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="glass-panel" style="padding: 0.85rem 1.25rem; background: var(--kite-blue-bg); border-color: rgba(56, 126, 209, 0.3);">
+    <p style="font-size: 0.86rem; color: #e0e7ff; margin: 0; line-height: 1.5;">
+      💡 <strong>Educational Context:</strong> {{ current_regime_info.description }} 
+      All prices and indicators displayed below reflect authentic NSE price action from this historical period.
+    </p>
+  </div>
+</section>
+
+<!-- Virtual Portfolio Quick Stat Bar (Zerodha Kite Overview Style) -->
+{% if portfolio_summary %}
+<section style="margin-bottom: 2.25rem;">
+  <div class="grid-4">
+    <div class="metric-card">
+      <span class="metric-title">Virtual Cash Balance</span>
+      <span class="metric-value" style="color: var(--kite-green);" class="tabular-nums">₹{{ "{:,.2f}".format(portfolio_summary.cash_balance) }}</span>
+      <span class="metric-sub">Starting Capital: ₹1,00,000.00</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-title">Total Portfolio Value</span>
+      <span class="metric-value tabular-nums">₹{{ "{:,.2f}".format(portfolio_summary.total_portfolio_value) }}</span>
+      <span class="metric-sub tabular-nums">Stock Holdings: ₹{{ "{:,.2f}".format(portfolio_summary.holdings_valuation) }}</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-title">Virtual Net P&L</span>
+      <span class="metric-value tabular-nums {% if portfolio_summary.total_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}">
+        {% if portfolio_summary.total_pnl >= 0 %}▲ +{% else %}▼ {% endif %}₹{{ "{:,.2f}".format(portfolio_summary.total_pnl) }}
+      </span>
+      <span class="metric-sub tabular-nums {% if portfolio_summary.total_return_pct >= 0 %}text-profit{% else %}text-loss{% endif %}" style="font-weight: 600;">
+        {% if portfolio_summary.total_return_pct >= 0 %}+{% endif %}{{ "{:.2f}".format(portfolio_summary.total_return_pct) }}% Return
+      </span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-title">Realized Friction & Tax</span>
+      <span class="metric-value" style="color: var(--accent-amber);" class="tabular-nums">₹{{ "{:,.2f}".format(portfolio_summary.total_charges_paid + portfolio_summary.stcg_tax_provision) }}</span>
+      <span class="metric-sub">STT, Brokerage, GST, STCG</span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Active Educational Setups Section -->
+<section style="margin-bottom: 2.5rem;">
+  <div class="section-header">
+    <div>
+      <h2>Active Technical Setups ({{ active_signals|length }} Detected)</h2>
+      <p class="section-subtitle">Real computed indicators paired with historical win-rates and voice narration</p>
+    </div>
+    <a href="{{ url_for('screener_route', regime=active_regime) }}" class="btn btn-outline" style="font-size: 0.82rem; padding: 0.4rem 0.85rem;">
+      Open Full Screener →
+    </a>
+  </div>
+
+  <div class="grid-3">
+    {% for item in active_signals[:6] %}
+      {% set sig = item.primary_signal %}
+      <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.25rem;">
+        <div>
+          <!-- Header: Symbol and Badge -->
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem;">
+            <div>
+              <h3 style="margin-bottom: 0.15rem; font-size: 1.05rem;">
+                <a href="{{ url_for('stock_detail_route', symbol=item.symbol, regime=active_regime) }}" style="color: #ffffff; text-decoration: none;">
+                  {{ item.name }}
+                </a>
+              </h3>
+              <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap;">
+                <span style="font-size: 0.78rem; color: var(--text-secondary);">{{ item.symbol }} • {{ item.sector }}</span>
+                {% if item.source == 'fallback_synthetic' %}
+                  <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.65rem;" title="Synthetic resilient price model">⚡ Synthetic Model</span>
+                {% elif item.source == 'cached' %}
+                  <span class="badge" style="background: rgba(56, 126, 209, 0.15); color: #60a5fa; border: 1px solid rgba(56, 126, 209, 0.3); font-size: 0.65rem;" title="Cached historical NSE data">📦 Cached NSE</span>
+                {% else %}
+                  <span class="badge" style="background: rgba(0, 208, 156, 0.15); color: #00d09c; border: 1px solid rgba(0, 208, 156, 0.3); font-size: 0.65rem;" title="Live / Near-live NSE feed">🟢 Live NSE</span>
+                {% endif %}
+              </div>
+            </div>
+            <span class="badge badge-{{ sig.badge_color }}">{{ sig.title }}</span>
+          </div>
+
+          <!-- Price & Metrics Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: baseline; background: var(--bg-surface-elevated); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); margin-bottom: 0.85rem; border: 1px solid var(--border-subtle);">
+            <div>
+              <span style="font-size: 1.2rem; font-weight: 800; color: #ffffff;" class="tabular-nums">₹{{ "{:,.2f}".format(item.price) }}</span>
+            </div>
+            <div style="text-align: right; font-size: 0.78rem; color: var(--text-secondary);" class="tabular-nums">
+              <span>RSI: <strong style="color: #ffffff;">{{ item.snapshot.rsi.value }}</strong></span> • 
+              <span>Vol: <strong style="color: #ffffff;">{{ item.snapshot.volume.ratio }}x</strong></span>
+            </div>
+          </div>
+
+          <!-- AI Plain English Summary Preview -->
+          <div style="margin-bottom: 0.85rem;">
+            <p id="summary-{{ loop.index }}" style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.55;">
+              {{ item.explanation.summary }}
+            </p>
+          </div>
+
+          <!-- Historical Win Rate Precedent Tag -->
+          {% if item.stats %}
+            <div style="background: var(--kite-blue-bg); border-left: 3px solid var(--kite-blue); padding: 0.5rem 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+              <div style="font-size: 0.72rem; color: #60a5fa; font-weight: 700; text-transform: uppercase;">
+                Historical Backtest Precedent:
+              </div>
+              <div style="font-size: 0.8rem; color: #e0e7ff; margin-top: 0.15rem;" class="tabular-nums">
+                <strong>{{ item.stats.win_rate_pct }}% Win Rate</strong> over {{ item.stats.sample_size }} triggers 
+                (Avg Gain: +{{ item.stats.avg_gain_pct }}%, Max DD: {{ item.stats.avg_drawdown_pct }}%)
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Action Footer -->
+        <div style="display: flex; gap: 0.5rem; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 0.85rem;">
+          <a href="{{ url_for('stock_detail_route', symbol=item.symbol, regime=active_regime) }}" class="btn btn-primary" style="flex: 1; font-size: 0.8rem; padding: 0.4rem;">
+            Analyze & Trade
+          </a>
+          <button class="btn btn-voice" onclick="narrateExplanation('summary-{{ loop.index }}', this)" title="Listen via browser voice narration">
+            🔊 Listen
+          </button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Educational Learning Pillars -->
+<section>
+  <div class="glass-panel" style="padding: 1.5rem;">
+    <h3 style="margin-bottom: 1rem; color: #ffffff; font-size: 1.15rem;">🎓 How Invest IQ Builds Investment Intuition</h3>
+    <div class="grid-3">
+      <div style="padding: 1rem; border-left: 3px solid var(--kite-green); background: var(--bg-surface-elevated); border-radius: 4px;">
+        <h4 style="color: var(--kite-green); font-size: 0.95rem; margin-bottom: 0.3rem;">1. Grounded In Real Numbers</h4>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+          Every AI explanation references that stock's actual RSI, MACD, and Bollinger Bands — never vague templates.
+        </p>
+      </div>
+
+      <div style="padding: 1rem; border-left: 3px solid var(--kite-blue); background: var(--bg-surface-elevated); border-radius: 4px;">
+        <h4 style="color: #60a5fa; font-size: 0.95rem; margin-bottom: 0.3rem;">2. Empirical Win-Rates</h4>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+          We show backtested win rates transparently next to every setup. No signal is presented as a guaranteed prediction.
+        </p>
+      </div>
+
+      <div style="padding: 1rem; border-left: 3px solid var(--accent-amber); background: var(--bg-surface-elevated); border-radius: 4px;">
+        <h4 style="color: #fbbf24; font-size: 0.95rem; margin-bottom: 0.3rem;">3. Behavioral Cooldowns</h4>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+          Consecutive losses trigger mandatory reflections and cool-off periods to eliminate revenge trading before real capital is ever risked.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

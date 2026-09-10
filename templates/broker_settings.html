@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Zerodha Kite Connect Bridge — Invest IQ{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+  
+  <!-- Header -->
+  <div class="section-header" style="margin-bottom: 1.5rem;">
+    <div>
+      <h1>⚡ Zerodha Kite Connect Bridge</h1>
+      <p class="section-subtitle">
+        Configure optional broker paper trading connection • Strict Human-in-the-Loop order execution
+      </p>
+    </div>
+    <div>
+      <span class="badge {% if settings.broker_mode == 'KITE_CONNECT' %}kite-badge-green{% else %}kite-badge-orange{% endif %}">
+        Mode: {{ settings.broker_mode }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Educational Explainer Panel -->
+  <div class="glass-panel" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #ff5722;">
+    <h3 style="color: #ff5722; font-size: 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <span>🛡️</span> Human-in-the-Loop Safe Harbor Architecture
+    </h3>
+    <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.75rem;">
+      Invest IQ provides a full-fidelity Zerodha Kite Connect bridge for realistic practice.
+      In alignment with regulatory framing and educational safety, <strong>autonomous or unassisted algorithmic execution is strictly disabled</strong>. 
+      Every order requires explicit human modal authorization before transmission.
+    </p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+      <div style="background: var(--bg-surface-elevated); padding: 0.85rem; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+        <div style="font-weight: 700; color: #ffffff; font-size: 0.85rem; margin-bottom: 0.25rem;">
+          🟢 Default: Simulated Sandbox (Free ₹0 Stack)
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin: 0; line-height: 1.5;">
+          No external Zerodha API subscription needed. Accurately simulates Kite order payloads, CNC/MIS margins, and full Indian statutory friction.
+        </p>
+      </div>
+      <div style="background: var(--bg-surface-elevated); padding: 0.85rem; border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);">
+        <div style="font-weight: 700; color: #ffffff; font-size: 0.85rem; margin-bottom: 0.25rem;">
+          🔑 Advanced: Live Kite Personal API
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin: 0; line-height: 1.5;">
+          For advanced users with an active Kite Connect Developer app (charged ₹2,000/mo by Zerodha). Transmits human-approved orders directly to your Kite account.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Form -->
+  <div class="glass-panel" style="padding: 1.75rem;">
+    <form method="POST" action="{{ url_for('broker_settings_route') }}">
+      
+      <!-- Operating Mode Selection -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label" style="font-weight: 700; margin-bottom: 0.5rem; display: block;">
+          Broker Execution Mode
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-surface-elevated); cursor: pointer;">
+            <input type="radio" name="broker_mode" value="SIMULATED" {% if settings.broker_mode != 'KITE_CONNECT' %}checked{% endif %} style="margin-top: 0.2rem;" onchange="toggleKiteCredentials(false)">
+            <div>
+              <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Simulated Kite Sandbox</div>
+              <div style="font-size: 0.76rem; color: var(--kite-green); font-weight: 600; margin-top: 0.15rem;">✓ 100% Free (₹0 Cost)</div>
+              <div style="font-size: 0.76rem; color: var(--text-tertiary); margin-top: 0.25rem;">Emulates Zerodha Kite Connect REST engine locally without any subscription.</div>
+            </div>
+          </label>
+
+          <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-surface-elevated); cursor: pointer;">
+            <input type="radio" name="broker_mode" value="KITE_CONNECT" {% if settings.broker_mode == 'KITE_CONNECT' %}checked{% endif %} style="margin-top: 0.2rem;" onchange="toggleKiteCredentials(true)">
+            <div>
+              <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Live Kite Connect API</div>
+              <div style="font-size: 0.76rem; color: #fbbf24; font-weight: 600; margin-top: 0.15rem;">Requires Zerodha Subscription</div>
+              <div style="font-size: 0.76rem; color: var(--text-tertiary); margin-top: 0.25rem;">Connects to official Zerodha Kite Connect Personal Developer API.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Default Product Choice (CNC vs MIS) -->
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label" style="font-weight: 700; margin-bottom: 0.4rem; display: block;">
+          Default Order Product Code
+        </label>
+        <select name="default_product" class="form-control" style="max-width: 380px;">
+          <option value="CNC" {% if settings.default_product == 'CNC' %}selected{% endif %}>
+            CNC (Cash & Carry — Delivery Equity, ₹0 Brokerage)
+          </option>
+          <option value="MIS" {% if settings.default_product == 'MIS' %}selected{% endif %}>
+            MIS (Margin Intraday Square-off — 5x Leverage, ₹20 Brokerage)
+          </option>
+        </select>
+        <small style="color: var(--text-tertiary); font-size: 0.76rem; display: block; margin-top: 0.35rem;">
+          Can be toggled per trade in the order confirmation window.
+        </small>
+      </div>
+
+      <!-- Kite Connect API Credentials Container -->
+      <div id="kite-credentials-box" style="{% if settings.broker_mode != 'KITE_CONNECT' %}display: none;{% endif %} background: var(--bg-canvas); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
+        <h4 style="color: #ffffff; font-size: 0.9rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔑</span> Kite Connect Personal API Credentials
+        </h4>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="kite_api_key">Kite API Key</label>
+          <input type="text" id="kite_api_key" name="kite_api_key" value="{{ settings.kite_api_key }}" class="form-control" placeholder="e.g. abc123def456">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="kite_api_secret">Kite API Secret</label>
+          <input type="password" id="kite_api_secret" name="kite_api_secret" value="{{ settings.kite_api_secret }}" class="form-control" placeholder="••••••••••••••••">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0.5rem;">
+          <label class="form-label" for="kite_access_token">Daily Access Token</label>
+          <input type="text" id="kite_access_token" name="kite_access_token" value="{{ settings.kite_access_token }}" class="form-control" placeholder="Obtained after daily Kite login flow">
+          <small style="color: var(--text-tertiary); font-size: 0.75rem; display: block; margin-top: 0.35rem;">
+            Zerodha invalidates access tokens every morning at 06:00 AM IST per SEBI exchange guidelines.
+          </small>
+        </div>
+      </div>
+
+      <!-- Submit & Reset Action Buttons -->
+      <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.5rem; font-size: 0.92rem;">
+          Save Broker Settings
+        </button>
+        <a href="{{ url_for('dashboard_route') }}" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; font-size: 0.92rem;">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Safe Harbor Legal Disclaimer -->
+  <div style="margin-top: 2rem; font-size: 0.76rem; color: var(--text-tertiary); text-align: center; line-height: 1.5;">
+    Invest IQ is an independent educational technology project. "Zerodha" and "Kite" are registered trademarks of Zerodha Broking Ltd. 
+    Invest IQ is not affiliated with or endorsed by Zerodha Broking Ltd. All features comply with educational non-advisory simulation standards.
+  </div>
+
+</div>
+
+<script>
+function toggleKiteCredentials(show) {
+  const box = document.getElementById('kite-credentials-box');
+  if (box) {
+    box.style.display = show ? 'block' : 'none';
+  }
+}
+</script>
+{% endblock %}

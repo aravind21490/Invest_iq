@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}My Virtual Portfolio — Invest IQ{% endblock %}
+
+{% block content %}
+<!-- Portfolio Header -->
+<div class="section-header" style="margin-bottom: 1.25rem;">
+  <div>
+    <h1>Virtual Portfolio & Holdings</h1>
+    <p class="section-subtitle">Real-time valuation • Realistic Indian friction deduction • Diversification monitoring</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <span class="badge badge-emerald">₹1,00,000 Starting Capital</span>
+    <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.75rem; font-size: 0.78rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" onclick="confirmResetPortfolio()">
+      🔄 Reset Portfolio
+    </button>
+  </div>
+</div>
+
+<!-- Overconcentration Alert Banner -->
+{% if summary.concentration.is_overconcentrated %}
+<div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+  <span style="font-size: 1.25rem;">⚠️</span>
+  <div>
+    <strong>Portfolio Overconcentration Warning:</strong> 
+    Your allocation to <strong>{{ summary.concentration.symbol }}</strong> represents 
+    <strong>{{ summary.concentration.max_pct }}%</strong> of your total portfolio value (threshold: 35%).
+    In real markets, excessive concentration leaves you vulnerable to company-specific risk. Consider reallocating across multiple sectors.
+  </div>
+</div>
+{% endif %}
+
+<!-- Key Metrics Grid (Kite Overview Style) -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+  <div class="metric-card">
+    <span class="metric-title">Available Cash</span>
+    <span class="metric-value" style="color: var(--kite-green);" class="tabular-nums">₹{{ "{:,.2f}".format(summary.cash_balance) }}</span>
+    <span class="metric-sub">Liquid Capital</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Total Portfolio Value</span>
+    <span class="metric-value tabular-nums">₹{{ "{:,.2f}".format(summary.total_portfolio_value) }}</span>
+    <span class="metric-sub tabular-nums">Stock Holdings: ₹{{ "{:,.2f}".format(summary.holdings_valuation) }}</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Net Total P&L</span>
+    <span class="metric-value tabular-nums {% if summary.total_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}">
+      {% if summary.total_pnl >= 0 %}▲ +{% else %}▼ {% endif %}₹{{ "{:,.2f}".format(summary.total_pnl) }}
+    </span>
+    <span class="metric-sub tabular-nums {% if summary.total_return_pct >= 0 %}text-profit{% else %}text-loss{% endif %}" style="font-weight: 600;">
+      {% if summary.total_return_pct >= 0 %}+{% endif %}{{ "{:.2f}".format(summary.total_return_pct) }}% Overall Return
+    </span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Total Friction Paid</span>
+    <span class="metric-value tabular-nums" style="color: var(--accent-amber);">₹{{ "{:,.2f}".format(summary.total_charges_paid) }}</span>
+    <span class="metric-sub">STT, Brokerage, GST, Stamp</span>
+  </div>
+</div>
+
+<!-- Equity Progression Curve (Reconstructed from Executed Simulator Trades) -->
+<div class="glass-panel" style="margin-bottom: 2rem; padding: 1.25rem;">
+  <div class="section-header" style="margin-bottom: 1rem; align-items: center;">
+    <div>
+      <h2 style="font-size: 1.15rem;">📈 Virtual Equity Progression Curve</h2>
+      <p class="section-subtitle">Real-time capital trajectory reconstructed on the fly from executed trades and statutory friction</p>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-tertiary); font-family: var(--font-mono);">
+      Baseline: ₹{{ "{:,.2f}".format(summary.initial_cash) }}
+    </div>
+  </div>
+  <div style="position: relative; height: 220px; width: 100%;">
+    <canvas id="equityCurveChart"></canvas>
+  </div>
+</div>
+
+<!-- Mandatory Reflection Section if Account is Locked -->
+{% if summary.is_locked_for_reflection %}
+<div id="reflection-section" class="glass-panel" style="border-left: 4px solid var(--accent-amber); margin-bottom: 2rem; background: rgba(245, 158, 11, 0.05); padding: 1.5rem;">
+  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
+    <span style="font-size: 1.4rem;">🧠</span>
+    <h2 style="color: #fbbf24; font-size: 1.25rem;">Mandatory Trade Reflection Gate</h2>
+  </div>
+  <p style="font-size: 0.88rem; color: #fef3c7; line-height: 1.5; margin-bottom: 1.25rem;">
+    {{ summary.lock_reason }}<br>
+    Educational Rule: You must articulate what went wrong before executing another order. This transforms virtual losses into permanent investment wisdom.
+  </p>
+
+  <form id="reflection-form" onsubmit="handleReflectionSubmit(event)">
+    <div class="form-group">
+      <label class="form-label" for="ref-thesis">Original Entry Thesis</label>
+      <input type="text" id="ref-thesis" class="form-control" placeholder="e.g. Bought hoping for an RSI oversold bounce from 28..." required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="ref-reason">What caused the trade to lose?</label>
+      <input type="text" id="ref-reason" class="form-control" placeholder="e.g. Broke below key support on high institutional volume; kept falling..." required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="ref-lesson">What is your concrete lesson for future trades?</label>
+      <textarea id="ref-lesson" class="form-control" rows="3" placeholder="e.g. Always set a hard stop loss at 2% instead of waiting for a turnaround..." required></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="background: #f59e0b; color: #000; font-weight: 700;">
+      Submit Reflection & Unlock Simulator
+    </button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Open Positions Table (Zerodha Kite Style) -->
+<div class="glass-panel" style="margin-bottom: 2rem; padding: 1.25rem;">
+  <div class="section-header" style="margin-bottom: 1rem;">
+    <div>
+      <h2 style="font-size: 1.15rem;">Active Holdings ({{ summary.positions_count }})</h2>
+      <p class="section-subtitle">Real-time market values and unrealized returns</p>
+    </div>
+  </div>
+
+  {% if summary.positions %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Shares</th>
+            <th>Avg Buy Price</th>
+            <th>Current Price</th>
+            <th>Invested Cost</th>
+            <th>Current Valuation</th>
+            <th>Unrealized P&L</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in summary.positions %}
+            <tr>
+              <td style="font-weight: 700; color: #ffffff;">{{ p.symbol }}</td>
+              <td class="tabular-nums">{{ p.quantity }}</td>
+              <td class="tabular-nums">₹{{ "{:,.2f}".format(p.avg_price) }}</td>
+              <td style="font-weight: 600;" class="tabular-nums">₹{{ "{:,.2f}".format(p.current_price) }}</td>
+              <td class="tabular-nums">₹{{ "{:,.2f}".format(p.invested_value) }}</td>
+              <td style="font-weight: 700; color: #ffffff;" class="tabular-nums">₹{{ "{:,.2f}".format(p.current_value) }}</td>
+              <td class="tabular-nums">
+                <span class="{% if p.unrealized_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}" style="font-weight: 700;">
+                  {% if p.unrealized_pnl >= 0 %}+{% endif %}₹{{ "{:,.2f}".format(p.unrealized_pnl) }}
+                  ({{ "{:+.2f}".format(p.unrealized_pct) }}%)
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <a href="{{ url_for('stock_detail_route', symbol=p.symbol) }}" class="btn btn-outline" style="padding: 0.25rem 0.65rem; font-size: 0.76rem;">
+                  Trade / Exit
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 2.5rem; color: var(--text-secondary);">
+      <p style="font-size: 1.05rem; margin-bottom: 0.4rem; color: #ffffff;">You have no open stock positions.</p>
+      <p style="font-size: 0.82rem; margin-bottom: 1.25rem; color: var(--text-tertiary);">Explore the screener or dashboard to practice your first virtual trade.</p>
+      <a href="{{ url_for('screener_route') }}" class="btn btn-primary" style="font-size: 0.82rem;">
+        Browse Screener
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Trade History Audit Log -->
+<div class="glass-panel" style="padding: 1.25rem;">
+  <div class="section-header" style="margin-bottom: 1rem;">
+    <div>
+      <h2 style="font-size: 1.15rem;">Executed Simulated Trades ({{ summary.total_trades_count }})</h2>
+      <p class="section-subtitle">Full friction audit: Brokerage, STT, and STCG tax provision</p>
+    </div>
+  </div>
+
+  {% if trades %}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Symbol</th>
+            <th>Qty</th>
+            <th>Exec Price</th>
+            <th>Turnover</th>
+            <th>Friction (Charges)</th>
+            <th>Net Realized P&L</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in trades|reverse %}
+            <tr>
+              <td class="tabular-nums" style="color: var(--text-tertiary);">#{{ t.id }}</td>
+              <td>
+                <span class="badge {% if t.type == 'BUY' %}badge-emerald{% else %}badge-rose{% endif %}">
+                  {{ t.type }}
+                </span>
+              </td>
+              <td style="font-weight: 700; color: #ffffff;">{{ t.symbol }}</td>
+              <td class="tabular-nums">{{ t.quantity }}</td>
+              <td class="tabular-nums">₹{{ "{:,.2f}".format(t.price) }}</td>
+              <td class="tabular-nums">₹{{ "{:,.2f}".format(t.turnover) }}</td>
+              <td style="color: var(--accent-amber);" class="tabular-nums">
+                ₹{{ "{:,.2f}".format(t.charges.total_charges) }}
+              </td>
+              <td class="tabular-nums">
+                {% if t.type == 'SELL' %}
+                  <span class="{% if t.net_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}" style="font-weight: 700;">
+                    {% if t.net_pnl >= 0 %}+{% endif %}₹{{ "{:,.2f}".format(t.net_pnl) }}
+                  </span>
+                {% else %}
+                  <span class="text-secondary">-</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 0.78rem; color: var(--text-tertiary);">{{ t.timestamp }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-tertiary); font-size: 0.85rem;">
+      No trades logged yet. Your simulated trade history will appear here.
+    </div>
+  {% endif %}
+</div>
+
+<script>
+async function handleReflectionSubmit(e) {
+  e.preventDefault();
+  const thesis = document.getElementById('ref-thesis').value;
+  const reason = document.getElementById('ref-reason').value;
+  const lesson = document.getElementById('ref-lesson').value;
+
+  try {
+    const res = await fetch("{{ url_for('api_reflect_route') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        thesis: thesis,
+        reason_for_loss: reason,
+        lesson_learned: lesson
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Reflection submitted successfully. Thank you for building discipline!");
+      window.location.reload();
+    } else {
+      alert("Error: " + data.error);
+    }
+  } catch (err) {
+    alert("Network error submitting reflection.");
+  }
+}
+
+async function confirmResetPortfolio() {
+  if (!confirm("Are you sure you want to reset your virtual portfolio? This will restore ₹1,00,000 virtual cash and clear all simulated positions, trades, and cooldowns.")) {
+    return;
+  }
+  try {
+    const res = await fetch("{{ url_for('api_portfolio_reset_route') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Virtual portfolio reset to ₹1,00,000 cash balance!");
+      window.location.reload();
+    } else {
+      alert("Error: " + (data.error || "Could not reset portfolio."));
+    }
+  } catch (err) {
+    alert("Network error resetting portfolio.");
+  }
+}
+
+// Reconstructed Equity Progression Curve Chart (100% Real Trade Execution History)
+(function() {
+  const chartCanvas = document.getElementById('equityCurveChart');
+  if (!chartCanvas || typeof Chart === 'undefined') return;
+
+  const tradeHistory = {{ trades|tojson if trades else '[]' }};
+  const startingCapital = {{ summary.initial_cash }};
+  const labels = ['Inception'];
+  const values = [startingCapital];
+  let running = startingCapital;
+
+  // Process chronologically (trades list is in historical order in backend)
+  tradeHistory.forEach(t => {
+    const dStr = t.timestamp ? t.timestamp.split(' ')[0] : `#${t.id}`;
+    labels.push(dStr);
+    if (t.type === 'SELL') {
+      running += (t.net_pnl || 0);
+    } else {
+      const chg = (t.charges && t.charges.total_charges) ? t.charges.total_charges : 0;
+      running -= chg;
+    }
+    values.push(Math.round(running * 100) / 100);
+  });
+
+  const isNetGain = running >= startingCapital;
+  const strokeColor = isNetGain ? '#00d09c' : '#eb5b5b';
+  const fillColor = isNetGain ? 'rgba(0, 208, 156, 0.12)' : 'rgba(235, 91, 91, 0.12)';
+
+  new Chart(chartCanvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Virtual Equity (₹)',
+        data: values,
+        borderColor: strokeColor,
+        backgroundColor: fillColor,
+        fill: true,
+        tension: 0.25,
+        borderWidth: 2,
+        pointRadius: values.length > 25 ? 1 : 4,
+        pointBackgroundColor: strokeColor,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(18, 23, 33, 0.95)',
+          titleColor: '#ffffff',
+          bodyColor: '#e0e7ff',
+          borderColor: '#202938',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: function(ctx) {
+              return ' Valuation: ₹' + ctx.parsed.y.toLocaleString('en-IN', {minimumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.04)' },
+          ticks: { color: '#64748b', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.04)' },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11 },
+            callback: function(val) {
+              return '₹' + val.toLocaleString('en-IN');
+            }
+          }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

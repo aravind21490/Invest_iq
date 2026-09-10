@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Educational Technical Screener — Invest IQ{% endblock %}
+
+{% block content %}
+<!-- Screener Header -->
+<div class="section-header" style="margin-bottom: 1.25rem;">
+  <div>
+    <h1>Educational Technical Screener</h1>
+    <p class="section-subtitle">
+      Scan 2,298 active NSE equity stocks across market regimes • Server-side search, sector filters, and technical pattern detection
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+    <span class="badge badge-indigo">
+      Page {{ pagination.page }} of {{ pagination.total_pages }}
+    </span>
+    <span class="badge badge-emerald">
+      {{ pagination.total_count }} Total NSE Stocks
+    </span>
+  </div>
+</div>
+
+<!-- Groww-Style Filter Bar -->
+<div class="glass-panel" style="padding: 1.1rem 1.25rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    
+    <!-- Top Row: Server-side Search + Sector Dropdown + Quick Direct Lookup -->
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
+      
+      <!-- Search & Sector Filter Form -->
+      <form method="GET" action="{{ url_for('screener_route') }}" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+        <input type="hidden" name="regime" value="{{ active_regime }}">
+        <input type="hidden" name="signal_filter" value="{{ current_filter }}">
+
+        <!-- Search across all 2,298 stocks -->
+        <div style="position: relative; display: flex; align-items: center;">
+          <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search 2,200+ NSE stocks..." 
+                 style="width: 220px; padding: 0.4rem 0.75rem; font-size: 0.84rem;">
+        </div>
+
+        <!-- Sector Dropdown -->
+        <select name="sector" class="form-control" onchange="this.form.submit()" 
+                style="width: 190px; padding: 0.4rem 0.75rem; font-size: 0.84rem; cursor: pointer;">
+          <option value="ALL" {% if current_sector == 'ALL' %}selected{% endif %}>All Sectors (2,298)</option>
+          {% for sec in available_sectors %}
+            <option value="{{ sec }}" {% if current_sector == sec %}selected{% endif %}>{{ sec }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.82rem;">
+          Filter
+        </button>
+
+        {% if search_query or current_sector != 'ALL' or current_filter != 'ALL' %}
+          <a href="{{ url_for('screener_route', regime=active_regime) }}" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+            ✕ Reset
+          </a>
+        {% endif %}
+      </form>
+
+      <!-- Direct Ticker Quick Lookup Form -->
+      <form method="GET" action="{{ url_for('screener_route') }}" style="display: flex; gap: 0.35rem; align-items: center;">
+        <input type="hidden" name="regime" value="{{ active_regime }}">
+        <input type="text" name="custom_symbol" class="form-control" placeholder="Direct Symbol (e.g. HAL, RVNL)..." 
+               style="width: 220px; padding: 0.4rem 0.75rem; font-size: 0.82rem;" required>
+        <button type="submit" class="btn btn-emerald" style="padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+          Go Live
+        </button>
+      </form>
+    </div>
+
+    <!-- Bottom Row: Filter by Signal Type Pills -->
+    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;">
+      <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-tertiary); margin-right: 0.3rem; text-transform: uppercase;">
+        PATTERN:
+      </span>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='ALL') }}" 
+         class="regime-tab {% if current_filter == 'ALL' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        ALL
+      </a>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='OVERSOLD_BOUNCE') }}" 
+         class="regime-tab {% if current_filter == 'OVERSOLD_BOUNCE' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        🟢 Oversold (RSI &lt; 30)
+      </a>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='OVERBOUGHT_EXHAUSTION') }}" 
+         class="regime-tab {% if current_filter == 'OVERBOUGHT_EXHAUSTION' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        🔴 Overbought (RSI &gt; 70)
+      </a>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='BULLISH_MACD_CROSSOVER') }}" 
+         class="regime-tab {% if current_filter == 'BULLISH_MACD_CROSSOVER' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        ⚡ Bullish MACD
+      </a>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='VOLATILITY_SQUEEZE') }}" 
+         class="regime-tab {% if current_filter == 'VOLATILITY_SQUEEZE' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        🎯 Volatility Squeeze
+      </a>
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter='VOLUME_BREAKOUT') }}" 
+         class="regime-tab {% if current_filter == 'VOLUME_BREAKOUT' %}active{% endif %}" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;">
+        🌊 Volume Breakout
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Zerodha Clean Fintech Table -->
+<div class="table-container">
+  <table id="screener-table">
+    <thead>
+      <tr>
+        <th>Company / Symbol</th>
+        <th>Sector & Market Cap</th>
+        <th>Price (₹)</th>
+        <th>RSI (14)</th>
+        <th>MACD Hist</th>
+        <th>Vol Ratio</th>
+        <th>Detected Setup</th>
+        <th>10d Precedent Win Rate</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if results|length == 0 %}
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary);">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem;">No stocks found matching the criteria</div>
+            <p style="font-size: 0.85rem; color: var(--text-tertiary);">
+              Try resetting your search query or selecting "All Sectors" / "ALL Patterns".
+            </p>
+            <a href="{{ url_for('screener_route', regime=active_regime) }}" class="btn btn-secondary" style="margin-top: 0.75rem; display: inline-block;">
+              Reset Filters
+            </a>
+          </td>
+        </tr>
+      {% endif %}
+
+      {% for s in results %}
+        {% set sig = s.primary_signal %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="font-weight: 700; color: #ffffff; font-size: 0.92rem;">{{ s.symbol }}</span>
+              {% if s.source == 'fallback_synthetic' %}
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.62rem; padding: 0.1rem 0.35rem;" title="Synthetic model estimate">⚡ Synthetic</span>
+              {% elif s.source == 'cached' %}
+                <span class="badge" style="background: rgba(56, 126, 209, 0.15); color: #60a5fa; border: 1px solid rgba(56, 126, 209, 0.3); font-size: 0.62rem; padding: 0.1rem 0.35rem;" title="Cached historical data">📦 Cached</span>
+              {% else %}
+                <span class="badge" style="background: rgba(0, 208, 156, 0.15); color: #00d09c; border: 1px solid rgba(0, 208, 156, 0.3); font-size: 0.62rem; padding: 0.1rem 0.35rem;" title="Live / Near-live feed">🟢 Live</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">{{ s.name }}</div>
+          </td>
+          <td>
+            <div style="font-size: 0.84rem; color: var(--text-primary);">{{ s.sector }}</div>
+            <span class="badge badge-slate" style="font-size: 0.68rem; margin-top: 0.15rem;">{{ s.cap }}</span>
+          </td>
+          <td style="font-weight: 800; font-family: var(--font-heading); font-size: 1.05rem;" class="tabular-nums">
+            ₹{{ "{:,.2f}".format(s.price) }}
+          </td>
+          <td class="tabular-nums">
+            <span class="{% if s.snapshot.rsi.value < 30 %}text-profit{% elif s.snapshot.rsi.value > 70 %}text-loss{% else %}text-white{% endif %}" style="font-weight: 700;">
+              {{ s.snapshot.rsi.value }}
+            </span>
+          </td>
+          <td class="tabular-nums">
+            <span class="{% if s.snapshot.macd.hist > 0 %}text-profit{% else %}text-loss{% endif %}" style="font-weight: 700;">
+              {% if s.snapshot.macd.hist > 0 %}+{% endif %}{{ s.snapshot.macd.hist }}
+            </span>
+          </td>
+          <td class="tabular-nums">
+            <span class="{% if s.snapshot.volume.ratio >= 1.5 %}text-cyan{% else %}text-secondary{% endif %}" style="font-weight: 700;">
+              {{ s.snapshot.volume.ratio }}x
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ sig.badge_color }}">{{ sig.title }}</span>
+          </td>
+          <td>
+            {% if s.stats %}
+              <span class="badge {% if s.stats.win_rate_pct >= 55.0 %}badge-emerald{% elif s.stats.win_rate_pct <= 45.0 %}badge-rose{% else %}badge-slate{% endif %}" title="{{ s.stats.summary_text }}">
+                📊 {{ s.stats.win_rate_pct }}% Win (N={{ s.stats.sample_size }})
+              </span>
+            {% else %}
+              <span style="font-size: 0.74rem; color: var(--text-tertiary);">Computing...</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
+              <a href="{{ url_for('stock_detail_route', symbol=s.symbol, regime=active_regime) }}" class="btn btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.78rem;">
+                Analyze & Trade
+              </a>
+              <button class="btn btn-voice" style="padding: 0.3rem 0.55rem; font-size: 0.78rem;" onclick="narrateExplanation('screener-exp-{{ loop.index }}', this)">
+                🔊
+              </button>
+              <div id="screener-exp-{{ loop.index }}" style="display: none;">
+                {{ s.explanation.summary }} {{ s.explanation.risk_lesson }}
+              </div>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination Controls -->
+{% if pagination.total_pages > 1 %}
+<div class="pagination-wrapper glass-panel">
+  <div class="pagination-info">
+    Showing stocks <strong>{{ (pagination.page - 1) * pagination.per_page + 1 }}</strong>–<strong>{{ [pagination.page * pagination.per_page, pagination.total_count]|min }}</strong> of <strong>{{ "{:,}".format(pagination.total_count) }}</strong> active NSE equities
+  </div>
+
+  <div class="pagination-controls">
+    <!-- First Page Button -->
+    <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter=current_filter, page=1) }}"
+       class="page-btn {% if pagination.page <= 1 %}disabled{% endif %}" title="First Page">
+      « First
+    </a>
+
+    <!-- Previous Page Button -->
+    <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter=current_filter, page=pagination.page - 1) }}"
+       class="page-btn {% if not pagination.has_prev %}disabled{% endif %}" title="Previous Page">
+      ‹ Prev
+    </a>
+
+    <!-- Direct Page Numbers Window -->
+    {% set start_page = [1, pagination.page - 2]|max %}
+    {% set end_page = [pagination.total_pages, start_page + 4]|min %}
+    {% if end_page - start_page < 4 and start_page > 1 %}
+      {% set start_page = [1, end_page - 4]|max %}
+    {% endif %}
+
+    {% for p in range(start_page, end_page + 1) %}
+      <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter=current_filter, page=p) }}"
+         class="page-btn {% if p == pagination.page %}active{% endif %}">
+        {{ p }}
+      </a>
+    {% endfor %}
+
+    <!-- Next Page Button -->
+    <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter=current_filter, page=pagination.page + 1) }}"
+       class="page-btn {% if not pagination.has_next %}disabled{% endif %}" title="Next Page">
+      Next ›
+    </a>
+
+    <!-- Last Page Button -->
+    <a href="{{ url_for('screener_route', regime=active_regime, q=search_query, sector=current_sector, signal_filter=current_filter, page=pagination.total_pages) }}"
+       class="page-btn {% if pagination.page >= pagination.total_pages %}disabled{% endif %}" title="Last Page">
+      Last »
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

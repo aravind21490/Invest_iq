@@ -1,0 +1,22 @@
+# render.yaml - Render Blueprint for Invest IQ Backend
+# Free tier Web Service with Gunicorn WSGI and automatic SSL
+
+services:
+  - type: web
+    name: investiq-backend
+    env: python
+    region: singapore # Closest to India (lowest latency for NSE traders)
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false # Set in Render Dashboard for AI plain-English explanations
+      - key: PORT
+        value: 10000

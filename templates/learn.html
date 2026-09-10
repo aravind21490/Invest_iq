@@ -1,0 +1,702 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Market Academy — Zero-Jargon Guide & Simulator Tasks{% endblock %}
+
+{% block content %}
+<!-- Academy Header -->
+<div class="section-header" style="margin-bottom: 1.5rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem;">
+      <h1>🎓 Stock Market Academy</h1>
+      <span class="badge badge-emerald">Interactive Zero-Jargon Guide</span>
+    </div>
+    <p class="section-subtitle">
+      Master stock market foundations with real-world examples, candlestick anatomy, indicator intuition, concrete numbers, and practical simulator tasks.
+    </p>
+  </div>
+  <div>
+    <button class="btn btn-voice" onclick="narrateExplanation('academy-overview-speech', this)">
+      🔊 Listen to Academy Overview
+    </button>
+  </div>
+</div>
+
+<!-- Interactive Progress Checklist Bar -->
+<div class="glass-panel" style="padding: 1.25rem; margin-bottom: 2rem; border-left: 4px solid var(--accent-indigo);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div>
+      <h3 style="color: #fff; font-size: 1.05rem; margin-bottom: 0.2rem;">🎯 Your Practical Simulator Learning Checklist</h3>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Complete each step-by-step task in the simulator to graduate from beginner to confident investor.</span>
+    </div>
+    <span id="progress-badge" class="badge badge-indigo">0 / 5 Tasks Done</span>
+  </div>
+
+  <div class="grid-3" style="gap: 0.75rem; font-size: 0.82rem;">
+    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      <input type="checkbox" id="task-chk-1" onchange="updateTaskProgress()">
+      <span>Task 1: Identify 3 everyday companies on Screener</span>
+    </label>
+    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      <input type="checkbox" id="task-chk-2" onchange="updateTaskProgress()">
+      <span>Task 2: Execute a virtual BUY order & review fees</span>
+    </label>
+    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      <input type="checkbox" id="task-chk-3" onchange="updateTaskProgress()">
+      <span>Task 3: Spot a wick on an interactive chart</span>
+    </label>
+    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      <input type="checkbox" id="task-chk-4" onchange="updateTaskProgress()">
+      <span>Task 4: Filter an Oversold (RSI &lt; 30) stock</span>
+    </label>
+    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+      <input type="checkbox" id="task-chk-5" onchange="updateTaskProgress()">
+      <span>Task 5: Check portfolio friction & drawdown score</span>
+    </label>
+  </div>
+</div>
+
+<!-- Quick Navigation Pill Bar -->
+<div style="display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.75rem; margin-bottom: 2rem;">
+  <a href="#module-1" class="regime-tab active">1. What is the Stock Market?</a>
+  <a href="#module-2" class="regime-tab">2. How to Buy & Sell</a>
+  <a href="#module-3" class="regime-tab">3. Candlestick Anatomy & Charts</a>
+  <a href="#module-4" class="regime-tab">4. Why Indicators Are Used</a>
+  <a href="#module-5" class="regime-tab">5. Friction & Real Costs</a>
+</div>
+
+<!-- ==========================================================================
+     MODULE 1: WHAT IS THE STOCK MARKET & WHAT IS A SHARE?
+     ========================================================================== -->
+<section id="module-1" class="glass-panel" style="margin-bottom: 2.5rem; border-top: 3px solid var(--accent-indigo);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-indigo">Module 1</span>
+      <h2 style="margin-top: 0.5rem; font-size: 1.35rem;">What is the Stock Market & What is a Share?</h2>
+    </div>
+    <button class="btn btn-voice" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="narrateExplanation('mod1-text', this)">
+      🔊 Listen to Lesson
+    </button>
+  </div>
+
+  <div id="mod1-text" style="font-size: 0.92rem; color: #d1d5db; line-height: 1.7;">
+    <p style="margin-bottom: 1rem;">
+      The <strong>Stock Market (like the National Stock Exchange - NSE in India)</strong> is an electronic, government-regulated marketplace where people buy and sell fractional ownership of real companies.
+    </p>
+
+    <!-- Core Concepts Grid -->
+    <div class="grid-3" style="margin: 1.25rem 0; gap: 1rem;">
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+        <h3 style="font-size: 0.98rem; color: #fff; margin-bottom: 0.3rem;">🏢 What is a Share?</h3>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5;">
+          A share (also called equity or stock) is a legal certificate of ownership. If a company is divided into 1,00,000 shares and you buy 1,000 shares, you legally own 1% of that entire business.
+        </p>
+      </div>
+
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+        <h3 style="font-size: 0.98rem; color: #fff; margin-bottom: 0.3rem;">💡 Why Do Companies List?</h3>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5;">
+          Instead of taking high-interest loans from banks, companies sell shares to the public in an IPO (Initial Public Offering). They use this capital to build factories, invent software, open stores, and expand.
+        </p>
+      </div>
+
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+        <h3 style="font-size: 0.98rem; color: #fff; margin-bottom: 0.3rem;">⚖️ Why Do Prices Move?</h3>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5;">
+          Prices fluctuate based on pure <strong>Supply and Demand</strong>. If more people want to buy than sell, the price goes UP. If more people want to sell than buy, the price goes DOWN.
+        </p>
+      </div>
+    </div>
+
+    <!-- Real-World Relatable Example Box -->
+    <div style="background: rgba(99, 102, 241, 0.08); border-left: 3px solid var(--accent-indigo); padding: 1.25rem; border-radius: 6px; margin: 1.5rem 0;">
+      <h4 style="color: #a5b4fc; font-size: 0.95rem; margin-bottom: 0.4rem;">🌍 Real-World Example: The Chai Franchise</h4>
+      <p style="font-size: 0.86rem; color: #e0e7ff; line-height: 1.6;">
+        Imagine your friend Ramesh runs a wildly popular neighborhood chai stall that makes ₹10,00,000 annual profit. Ramesh wants to expand and open 50 outlets across your state, which will cost ₹1 Crore. 
+        Instead of borrowing from a moneylender, he divides his business into <strong>1,00,000 shares valued at ₹100 each</strong>. 
+        You invest ₹10,000 to buy 100 shares. 
+        Two years later, Ramesh's 50 shops are packed, and company profits triple. Other investors now desperately want to own a piece of his chai empire and offer you <strong>₹250 per share</strong>. 
+        Your ₹10,000 investment is now worth ₹25,000! That is exactly how investing in companies like Tata Motors, Reliance, or Infosys works on the National Stock Exchange.
+      </p>
+    </div>
+
+    <!-- Concrete Numbers Example Box -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 6px; margin-bottom: 1.5rem;">
+      <h4 style="color: #fff; font-size: 0.92rem; margin-bottom: 0.4rem;">🔢 Concrete Math Example: Calculating Share Value & Returns</h4>
+      <div class="grid-3" style="gap: 0.75rem; font-size: 0.84rem; margin-top: 0.5rem;">
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Initial Purchase:</span>
+          <strong>50 shares @ ₹200 = ₹10,000</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Price Rises After Good Earnings:</span>
+          <strong>Price reaches ₹260 (+30%)</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">New Value & Unrealized Gain:</span>
+          <strong style="color: #34d399;">₹13,000 (+₹3,000 Profit)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant Interactive Knowledge Check -->
+    <div style="background: rgba(99, 102, 241, 0.05); border: 1px dashed var(--accent-indigo); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <h4 style="color: #a5b4fc; font-size: 0.92rem; margin-bottom: 0.3rem;">🧠 Quick Knowledge Check 1</h4>
+      <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;">
+        If a listed Indian company has a total of 10,000 shares and you buy 500 shares, what fraction of the company do you legally own?
+      </p>
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(1, 'A', false, '❌ Incorrect. 500 out of 10,000 is 5%, not 50%.')">A) 50%</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(1, 'B', true, '✅ Correct! 500 ÷ 10,000 = 0.05 (5% ownership). You participate in 5% of its future growth and dividend payouts!')">B) 5%</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(1, 'C', false, '❌ Incorrect. 500 out of 10,000 is 5%, not 0.5%.')">C) 0.5%</button>
+      </div>
+      <div id="quiz-feedback-1" style="display: none; margin-top: 0.75rem; font-size: 0.84rem; padding: 0.5rem 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Practical Hands-On Task -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="badge badge-emerald" style="font-size: 0.72rem;">📝 Practice Task 1</span>
+          <h4 style="color: #fff; margin-top: 0.3rem; font-size: 0.95rem;">Identify 3 Everyday Businesses on the Screener</h4>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
+            <strong>Step 1:</strong> Go to the Screener. <br>
+            <strong>Step 2:</strong> Find 3 companies whose products you use in real life (e.g. <em>TATA MOTORS</em> for cars, <em>ITC</em> for Aashirvaad/Sunfeast, <em>BHARTI AIRTEL</em> for mobile 5G). <br>
+            <strong>Step 3:</strong> Observe their market cap category and current share price. Then tick Task 1 above!
+          </p>
+        </div>
+        <a href="{{ url_for('screener_route') }}" class="btn btn-success" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+          Go to Screener →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+     MODULE 2: HOW BUYING & SELLING WORKS (ORDER MECHANICS)
+     ========================================================================== -->
+<section id="module-2" class="glass-panel" style="margin-bottom: 2.5rem; border-top: 3px solid var(--accent-emerald);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-emerald">Module 2</span>
+      <h2 style="margin-top: 0.5rem; font-size: 1.35rem;">How Buying & Selling Works (Order Mechanics & Investing vs Selling)</h2>
+    </div>
+    <button class="btn btn-voice" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="narrateExplanation('mod2-text', this)">
+      🔊 Listen to Lesson
+    </button>
+  </div>
+
+  <div id="mod2-text" style="font-size: 0.92rem; color: #d1d5db; line-height: 1.7;">
+    <p style="margin-bottom: 1rem;">
+      When you press "BUY" on an app, you are <strong>not</strong> buying from a broker or the government. You are trading directly with another individual or institution through an electronic <strong>Order Matching Engine</strong>.
+    </p>
+
+    <div class="grid-2" style="margin: 1.25rem 0; gap: 1.25rem;">
+      <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.25rem; border-radius: 8px;">
+        <h4 style="color: #34d399; margin-bottom: 0.4rem;">1. Bid vs. Ask (The Order Book)</h4>
+        <ul style="padding-left: 1.2rem; font-size: 0.85rem; color: #d1d5db; line-height: 1.6;">
+          <li><strong>Bid:</strong> The highest price any buyer is willing to pay right this second.</li>
+          <li><strong>Ask (Offer):</strong> The lowest price any seller is willing to accept right this second.</li>
+          <li><strong>The Spread:</strong> The difference between Bid and Ask. A trade executes instantly when a buyer agrees to the Ask price, or a seller agrees to the Bid price.</li>
+        </ul>
+      </div>
+
+      <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); padding: 1.25rem; border-radius: 8px;">
+        <h4 style="color: #818cf8; margin-bottom: 0.4rem;">2. Demat Account & Settlement</h4>
+        <ul style="padding-left: 1.2rem; font-size: 0.85rem; color: #d1d5db; line-height: 1.6;">
+          <li><strong>Demat (Dematerialized) Account:</strong> A secure digital locker (CDSL or NSDL in India) where your shares sit safely like digital property.</li>
+          <li><strong>T+1 Settlement:</strong> In India, trades settle in 1 business day (T+1). When you buy on Monday, the shares officially land in your Demat on Tuesday.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Real-World Relatable Example Box -->
+    <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid var(--accent-emerald); padding: 1.25rem; border-radius: 6px; margin: 1.5rem 0;">
+      <h4 style="color: #34d399; font-size: 0.95rem; margin-bottom: 0.4rem;">🌍 Real-World Example: Negotiating at a Vegetable Market (Mandi)</h4>
+      <p style="font-size: 0.86rem; color: #d1d5db; line-height: 1.6;">
+        Imagine walking into a bustling wholesale market to buy apples. 
+        The vendor shouts: <em>"Fresh Kashmiri apples for ₹120 per kg!"</em> (<strong>That is the Ask price</strong>). 
+        You reply: <em>"I will take 5 kg, but only for ₹100 per kg!"</em> (<strong>That is your Bid price</strong>). 
+        Right now, no transaction happens because neither of you agreed on price. 
+        If you are in a rush and say <em>"Okay fine, give it to me for ₹120"</em>, you just executed a <strong>Market Order</strong> (immediate fill at the current seller's Ask). 
+        If you leave your phone number and say <em>"Call me if you drop the price to ₹105"</em>, you placed a <strong>Limit Order</strong> (waits in the order book until a seller agrees).
+      </p>
+    </div>
+
+    <!-- Concrete Numbers Example Box -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 6px; margin-bottom: 1.5rem;">
+      <h4 style="color: #fff; font-size: 0.92rem; margin-bottom: 0.4rem;">🔢 Concrete Math Example: Market Order vs Limit Order</h4>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+        Suppose you look at the live order book for <code>RELIANCE.NS</code>:
+      </p>
+      <div class="grid-2" style="gap: 1rem; font-size: 0.82rem;">
+        <div style="background: rgba(16, 185, 129, 0.05); padding: 0.75rem; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          <strong style="color: #34d399;">Market Order Execution:</strong>
+          <p style="color: var(--text-muted); margin-top: 0.2rem;">
+            Best Ask is ₹2,502.00. You buy 10 shares at Market. You get filled immediately at ₹2,502.00. Total invested: ₹25,020 + regulatory fees.
+          </p>
+        </div>
+        <div style="background: rgba(99, 102, 241, 0.05); padding: 0.75rem; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2);">
+          <strong style="color: #818cf8;">Limit Order Execution:</strong>
+          <p style="color: var(--text-muted); margin-top: 0.2rem;">
+            You believe ₹2,502 is too high. You set a Limit Buy at ₹2,490.00. Your order sits dormant in the NSE order queue. If the price drops to ₹2,490 later in the day, it executes. If not, it expires.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant Interactive Knowledge Check -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--accent-emerald); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <h4 style="color: #34d399; font-size: 0.92rem; margin-bottom: 0.3rem;">🧠 Quick Knowledge Check 2</h4>
+      <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;">
+        You place a Market Buy order for 10 shares of a company when the Best Bid is ₹1,000 and the Best Ask is ₹1,004. At what price does your order execute?
+      </p>
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(2, 'A', false, '❌ Incorrect. ₹1,000 is what other buyers are bidding. Sellers are not selling for ₹1,000.')">A) ₹1,000</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(2, 'B', true, '✅ Correct! A Market Buy executes immediately against the lowest seller Ask price (₹1,004).')">B) ₹1,004</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(2, 'C', false, '❌ Incorrect. Orders do not automatically split down the middle unless a seller lowers their offer.')">C) ₹1,002</button>
+      </div>
+      <div id="quiz-feedback-2" style="display: none; margin-top: 0.75rem; font-size: 0.84rem; padding: 0.5rem 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Practical Hands-On Task -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="badge badge-emerald" style="font-size: 0.72rem;">📝 Practice Task 2</span>
+          <h4 style="color: #fff; margin-top: 0.3rem; font-size: 0.95rem;">Execute Your First Simulated BUY Order</h4>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
+            <strong>Step 1:</strong> Open <code>RELIANCE.NS</code> or <code>HDFCBANK.NS</code>. <br>
+            <strong>Step 2:</strong> Enter 5 shares in the order panel. <br>
+            <strong>Step 3:</strong> Check the fee breakdown: see how much is share cost, and how much is brokerage and STT. <br>
+            <strong>Step 4:</strong> Click "Execute Simulated Buy" and check your Portfolio page!
+          </p>
+        </div>
+        <a href="{{ url_for('stock_detail_route', symbol='RELIANCE.NS') }}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+          Trade RELIANCE →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+     MODULE 3: CANDLESTICK ANATOMY & CHARTS
+     ========================================================================== -->
+<section id="module-3" class="glass-panel" style="margin-bottom: 2.5rem; border-top: 3px solid var(--accent-cyan);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-sky">Module 3</span>
+      <h2 style="margin-top: 0.5rem; font-size: 1.35rem;">Candlestick Anatomy & Charts (Why Traders Use Them)</h2>
+    </div>
+    <button class="btn btn-voice" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="narrateExplanation('mod3-text', this)">
+      🔊 Listen to Lesson
+    </button>
+  </div>
+
+  <div id="mod3-text" style="font-size: 0.92rem; color: #d1d5db; line-height: 1.7;">
+    <p style="margin-bottom: 1.25rem;">
+      A single line chart only connects 3:30 PM closing prices. It hides <strong>who was winning during the session</strong>, <strong>where panic happened</strong>, and <strong>where buyers aggressively stepped in</strong>. Candlesticks show the complete picture with 4 price coordinates: <strong>Open, High, Low, and Close</strong>.
+    </p>
+
+    <!-- Visual Interactive Candlestick Anatomy Diagram -->
+    <div style="background: #080c14; border: 1px solid var(--border-glass); border-radius: 12px; padding: 2rem 1.5rem; margin-bottom: 1.5rem;">
+      <div class="grid-2" style="gap: 2rem; align-items: center;">
+        
+        <!-- Bullish Green Candle Diagram -->
+        <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.5rem; text-align: center;">
+          <h4 style="color: #34d399; font-size: 1.1rem; margin-bottom: 0.5rem;">🟢 Bullish Candle (Green)</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Buyers Won: Price Closed HIGHER than it Opened</p>
+          
+          <svg width="220" height="220" viewBox="0 0 220 220" style="margin: 0 auto; display: block;">
+            <line x1="110" y1="15" x2="110" y2="60" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+            <text x="125" y="22" fill="#34d399" font-size="11" font-family="sans-serif" font-weight="700">HIGH (Peak reached)</text>
+            <rect x="75" y="60" width="70" height="90" fill="#10b981" rx="4" />
+            <text x="155" y="65" fill="#fff" font-size="11" font-family="sans-serif" font-weight="700">CLOSE</text>
+            <text x="110" y="110" fill="#000" font-size="12" font-family="sans-serif" font-weight="800" text-anchor="middle">BODY</text>
+            <text x="155" y="150" fill="#9ca3af" font-size="11" font-family="sans-serif" font-weight="700">OPEN</text>
+            <line x1="110" y1="150" x2="110" y2="200" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+            <text x="125" y="205" fill="#34d399" font-size="11" font-family="sans-serif" font-weight="700">LOW (Deepest drop)</text>
+          </svg>
+
+          <p style="font-size: 0.82rem; color: #a7f3d0; margin-top: 1rem; text-align: left; line-height: 1.5;">
+            <strong>Interpretation:</strong> Price opened low, sellers tried to crash it to LOW, but buyers stepped in, absorbed all the selling, and drove the price up to CLOSE near the peak.
+          </p>
+        </div>
+
+        <!-- Bearish Red Candle Diagram -->
+        <div style="background: rgba(244, 63, 94, 0.04); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 8px; padding: 1.5rem; text-align: center;">
+          <h4 style="color: #fb7185; font-size: 1.1rem; margin-bottom: 0.5rem;">🔴 Bearish Candle (Red)</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Sellers Won: Price Closed LOWER than it Opened</p>
+
+          <svg width="220" height="220" viewBox="0 0 220 220" style="margin: 0 auto; display: block;">
+            <line x1="110" y1="15" x2="110" y2="60" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" />
+            <text x="125" y="22" fill="#fb7185" font-size="11" font-family="sans-serif" font-weight="700">HIGH (Peak reached)</text>
+            <rect x="75" y="60" width="70" height="90" fill="#f43f5e" rx="4" />
+            <text x="155" y="65" fill="#9ca3af" font-size="11" font-family="sans-serif" font-weight="700">OPEN</text>
+            <text x="110" y="110" fill="#fff" font-size="12" font-family="sans-serif" font-weight="800" text-anchor="middle">BODY</text>
+            <text x="155" y="150" fill="#fff" font-size="11" font-family="sans-serif" font-weight="700">CLOSE</text>
+            <line x1="110" y1="150" x2="110" y2="200" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" />
+            <text x="125" y="205" fill="#fb7185" font-size="11" font-family="sans-serif" font-weight="700">LOW (Deepest drop)</text>
+          </svg>
+
+          <p style="font-size: 0.82rem; color: #fecdd3; margin-top: 1rem; text-align: left; line-height: 1.5;">
+            <strong>Interpretation:</strong> Price opened high, buyers tried to rally to HIGH, but institutional sellers dumped shares and smashed the price down to CLOSE in the red.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Real-World Relatable Example Box -->
+    <div style="background: rgba(6, 182, 212, 0.08); border-left: 3px solid var(--accent-cyan); padding: 1.25rem; border-radius: 6px; margin: 1.5rem 0;">
+      <h4 style="color: #38bdf8; font-size: 0.95rem; margin-bottom: 0.4rem;">🌍 Real-World Example: The 6-Hour Tug-of-War Match</h4>
+      <p style="font-size: 0.86rem; color: #e0e7ff; line-height: 1.6;">
+        Think of every trading day as a <strong>6-hour tug-of-war match</strong> between two teams: Team Bulls (Buyers) and Team Bears (Sellers).
+        At 9:15 AM opening bell, the rope is in the middle (<strong>Open</strong>). 
+        During the day, Team Bulls violently pulls the rope 20 meters forward (<strong>High</strong>). 
+        Later, Team Bears counter-attacks and drags the rope 10 meters backward (<strong>Low</strong>). 
+        At 3:30 PM, the final referee whistle blows (<strong>Close</strong>). 
+        A <strong>long upper wick</strong> proves Team Bulls dragged the rope far forward, but got completely exhausted and surrendered that ground before the whistle. A <strong>long lower wick</strong> proves Team Bears tried to drag the rope away, but got overpowered by aggressive buyers!
+      </p>
+    </div>
+
+    <!-- Concrete Numbers Example Box -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 6px; margin-bottom: 1.5rem;">
+      <h4 style="color: #fff; font-size: 0.92rem; margin-bottom: 0.4rem;">🔢 Concrete Math Example: Breaking Down a Daily Candle</h4>
+      <div class="grid-4" style="gap: 0.5rem; font-size: 0.82rem; margin-top: 0.5rem;">
+        <div style="background: rgba(0,0,0,0.3); padding: 0.6rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">9:15 AM Open:</span>
+          <strong>₹500.00</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.6rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Intraday High:</span>
+          <strong style="color: #38bdf8;">₹530.00</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.6rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Intraday Low:</span>
+          <strong style="color: #f43f5e;">₹490.00</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.6rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">3:30 PM Close:</span>
+          <strong style="color: #34d399;">₹525.00 (Green +5%)</strong>
+        </div>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.6rem;">
+        Body = ₹25.00 (₹500 to ₹525). Upper Wick = ₹5.00 (₹525 to ₹530). Lower Wick = ₹10.00 (₹490 to ₹500). The long lower wick proves buyers defended the ₹490 level with huge buy orders.
+      </p>
+    </div>
+
+    <!-- Instant Interactive Knowledge Check -->
+    <div style="background: rgba(6, 182, 212, 0.05); border: 1px dashed var(--accent-cyan); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <h4 style="color: #38bdf8; font-size: 0.92rem; margin-bottom: 0.3rem;">🧠 Quick Knowledge Check 3</h4>
+      <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;">
+        A stock opens at ₹400, crashes to ₹360 during morning panic, but rallies hard in the afternoon and closes at ₹395. What does the candle look like?
+      </p>
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(3, 'A', true, '✅ Correct! Red body (Close ₹395 < Open ₹400) with a massive ₹35 lower wick showing institutional dip-buying absorption.')">A) Small Red body with a long lower wick (Dip absorption)</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(3, 'B', false, '❌ Incorrect. Close (395) is less than Open (400), so the body is red, not green.')">B) Tall Green body with no wicks</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(3, 'C', false, '❌ Incorrect. The low was 360 and it rallied to 395, creating a large lower shadow.')">C) Long upper wick with sellers winning</button>
+      </div>
+      <div id="quiz-feedback-3" style="display: none; margin-top: 0.75rem; font-size: 0.84rem; padding: 0.5rem 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Practical Hands-On Task -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="badge badge-emerald" style="font-size: 0.72rem;">📝 Practice Task 3</span>
+          <h4 style="color: #fff; margin-top: 0.3rem; font-size: 0.95rem;">Spot a Rejection Wick on a Real Stock Chart</h4>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
+            <strong>Step 1:</strong> Open <code>SUZLON.NS</code> or <code>TATAMOTORS.NS</code>. <br>
+            <strong>Step 2:</strong> Hover your mouse over the Candlestick Price Action Chart to trigger the interactive crosshair. <br>
+            <strong>Step 3:</strong> Find a bar where the High is far above the Close (an upper wick) or the Low is far below the Open (a lower wick). <br>
+            <strong>Step 4:</strong> Check off Task 3 in your checklist above!
+          </p>
+        </div>
+        <a href="{{ url_for('stock_detail_route', symbol='SUZLON.NS') }}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+          Inspect SUZLON Chart →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+     MODULE 4: WHY TECHNICAL INDICATORS ARE USED
+     ========================================================================== -->
+<section id="module-4" class="glass-panel" style="margin-bottom: 2.5rem; border-top: 3px solid var(--accent-purple);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-violet">Module 4</span>
+      <h2 style="margin-top: 0.5rem; font-size: 1.35rem;">Why Are Technical Indicators Used? (The 4 Intuitions)</h2>
+    </div>
+    <button class="btn btn-voice" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="narrateExplanation('mod4-text', this)">
+      🔊 Listen to Lesson
+    </button>
+  </div>
+
+  <div id="mod4-text" style="font-size: 0.92rem; color: #d1d5db; line-height: 1.7;">
+    <p style="margin-bottom: 1.25rem;">
+      Technical indicators are mathematical transformations of past price and volume. They do <strong>not</strong> predict the future; they measure <strong>speed, momentum, volatility, and institutional participation</strong> so you make rational, probabilistic decisions instead of emotional gambles:
+    </p>
+
+    <div class="grid-2" style="gap: 1.25rem;">
+      <!-- RSI -->
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; border-left: 3px solid #34d399;">
+        <h4 style="color: #34d399; font-size: 1.05rem; margin-bottom: 0.3rem;">🏎️ 1. RSI: The Speedometer</h4>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.6rem;">
+          <strong>The Real-World Analogy:</strong> Imagine driving a car. Normal cruising speed is 40 to 60 km/h. If your speedometer hits 130 km/h (<strong>RSI &gt; 70 Overbought</strong>), you can't accelerate forever without overheating the engine or crashing. If the car slams brakes to 10 km/h (<strong>RSI &lt; 30 Oversold</strong>), the vehicle has slowed to an extreme crawl.
+        </p>
+        <div style="font-size: 0.82rem; color: #d1d5db; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 4px;">
+          📌 <strong>Why we use it:</strong> Prevents you from FOMO buying at euphoric tops, and alerts you when panic selling has reached mathematical exhaustion.
+        </div>
+      </div>
+
+      <!-- MACD -->
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; border-left: 3px solid #818cf8;">
+        <h4 style="color: #818cf8; font-size: 1.05rem; margin-bottom: 0.3rem;">🌊 2. MACD: The Ocean Tide & Wave</h4>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.6rem;">
+          <strong>The Real-World Analogy:</strong> A boat in the sea experiences quick surface ripples (12-day EMA) and the deeper, powerful oceanic tide (26-day EMA). When the quick surface ripple crosses above the deep tide, it signals a strong shift in momentum.
+        </p>
+        <div style="font-size: 0.82rem; color: #d1d5db; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 4px;">
+          📌 <strong>Why we use it:</strong> Filters out day-to-day noise so you only trade in the direction of the underlying market current.
+        </div>
+      </div>
+
+      <!-- Bollinger Bands -->
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; border-left: 3px solid #c084fc;">
+        <h4 style="color: #c084fc; font-size: 1.05rem; margin-bottom: 0.3rem;">🎯 3. Bollinger Bands: The Stretched Rubber Band</h4>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.6rem;">
+          <strong>The Real-World Analogy:</strong> Wrap a thick rubber band around your fingers. If you pull it outward, tension increases and it snaps back toward center. When the rubber band is held tightly squeezed (a <strong>Volatility Squeeze</strong>), energy is coiling for an explosive expansion.
+        </p>
+        <div style="font-size: 0.82rem; color: #d1d5db; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 4px;">
+          📌 <strong>Why we use it:</strong> Mathematically, 95% of prices stay inside these bands. It catches extremes and warns of sudden breakouts.
+        </div>
+      </div>
+
+      <!-- Volume Ratio -->
+      <div style="background: rgba(255, 255, 255, 0.02); padding: 1.25rem; border-radius: 8px; border-left: 3px solid #38bdf8;">
+        <h4 style="color: #38bdf8; font-size: 1.05rem; margin-bottom: 0.3rem;">🔍 4. Volume: The Cricket Stadium Roar</h4>
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.6rem;">
+          <strong>The Real-World Analogy:</strong> If someone hits a six in an empty practice park, nobody is watching. If Virat Kohli hits a six in front of 50,000 roaring fans at the Wankhede stadium, that move has undeniable force and genuine conviction.
+        </p>
+        <div style="font-size: 0.82rem; color: #d1d5db; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 4px;">
+          📌 <strong>Why we use it:</strong> Proves whether institutional money (Banks, Mutual Funds, FIIs) is buying, or if retail traders are walking into a low-volume trap.
+        </div>
+      </div>
+    </div>
+
+    <!-- Concrete Numbers Example Box -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 6px; margin: 1.5rem 0;">
+      <h4 style="color: #fff; font-size: 0.92rem; margin-bottom: 0.4rem;">🔢 Concrete Math Example: Confluence of Signals</h4>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+        Never rely on 1 indicator alone. Professional systems use <em>confluence</em>:
+      </p>
+      <div class="grid-3" style="gap: 0.75rem; font-size: 0.82rem;">
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">1. RSI Value:</span>
+          <strong>24.8 (Oversold &lt; 30)</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">2. Bollinger Band:</span>
+          <strong>Price piercing Lower Band</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">3. Volume Ratio:</span>
+          <strong style="color: #34d399;">2.4x 20-day average</strong>
+        </div>
+      </div>
+      <p style="font-size: 0.82rem; color: #a7f3d0; margin-top: 0.6rem;">
+        <strong>Confluence Signal:</strong> Heavy institutional volume absorbed the selloff right at the statistical lower band while RSI was oversold. This setup has a historically high probability of a bounce.
+      </p>
+    </div>
+
+    <!-- Instant Interactive Knowledge Check -->
+    <div style="background: rgba(168, 85, 247, 0.05); border: 1px dashed var(--accent-purple); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <h4 style="color: #c084fc; font-size: 0.92rem; margin-bottom: 0.3rem;">🧠 Quick Knowledge Check 4</h4>
+      <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;">
+        A stock rallies +7% in a single day, but the Volume Ratio is only 0.4x (60% below average). What does this indicator data tell you?
+      </p>
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(4, 'A', true, '✅ Correct! A rally on very low volume lacks institutional backing and is prone to a sharp bull trap reversal.')">A) Low institutional conviction / high risk of a bull trap</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(4, 'B', false, '❌ Incorrect. Volume is 60% below average, meaning large funds did not participate.')">B) Massive institutional accumulation</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(4, 'C', false, '❌ Incorrect. Low volume increases uncertainty, not guaranteed gains.')">C) Guaranteed rally continuation</button>
+      </div>
+      <div id="quiz-feedback-4" style="display: none; margin-top: 0.75rem; font-size: 0.84rem; padding: 0.5rem 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Practical Hands-On Task -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="badge badge-emerald" style="font-size: 0.72rem;">📝 Practice Task 4</span>
+          <h4 style="color: #fff; margin-top: 0.3rem; font-size: 0.95rem;">Filter an Oversold or Squeeze Stock on the Screener</h4>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
+            <strong>Step 1:</strong> Click the <strong>Oversold (RSI &lt; 30)</strong> filter in the Screener. <br>
+            <strong>Step 2:</strong> Pick a stock, click "Analyze", and read the plain-English AI explanation. <br>
+            <strong>Step 3:</strong> Check the historical 10-day win-rate badge to see what happened in past market regimes!
+          </p>
+        </div>
+        <a href="{{ url_for('screener_route', signal_filter='OVERSOLD_BOUNCE') }}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+          Filter Oversold Stocks →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==========================================================================
+     MODULE 5: FRICTION & REAL COSTS
+     ========================================================================== -->
+<section id="module-5" class="glass-panel" style="border-top: 3px solid var(--accent-amber);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+    <div>
+      <span class="badge badge-amber">Module 5</span>
+      <h2 style="margin-top: 0.5rem; font-size: 1.35rem;">The Hidden Friction: Why Over-Trading Loses Money</h2>
+    </div>
+    <button class="btn btn-voice" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="narrateExplanation('mod5-text', this)">
+      🔊 Listen to Lesson
+    </button>
+  </div>
+
+  <div id="mod5-text" style="font-size: 0.92rem; color: #d1d5db; line-height: 1.7;">
+    <p style="margin-bottom: 1rem;">
+      According to SEBI studies, over 90% of active retail traders lose money. The primary reason is not bad stock picking—it is <strong>transaction friction</strong> that silently eats away capital on every single order:
+    </p>
+
+    <!-- Real-World Relatable Example Box -->
+    <div style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid var(--accent-amber); padding: 1.25rem; border-radius: 6px; margin: 1.25rem 0;">
+      <h4 style="color: #fbbf24; font-size: 0.95rem; margin-bottom: 0.4rem;">🌍 Real-World Example: The Highway Toll Booths</h4>
+      <p style="font-size: 0.86rem; color: #fef3c7; line-height: 1.6;">
+        Imagine driving your car between two cities. Every 5 kilometers, there is a ₹100 toll gate. 
+        If you drive back and forth 20 times a day just for the fun of driving, you will pay ₹4,000 in tolls alone—even if your car never breaks down! 
+        In the Indian stock market, every trade pays <strong>Brokerage (₹20 or 0.05%)</strong>, <strong>STT (0.1%)</strong>, <strong>Exchange turnover fees</strong>, <strong>SEBI charges</strong>, <strong>GST (18%)</strong>, and <strong>20% STCG tax</strong> on short-term profits. If you over-trade aiming for tiny gains, the friction wipes out your portfolio.
+      </p>
+    </div>
+
+    <!-- Concrete Numbers Example Box -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: 6px; margin-bottom: 1.5rem;">
+      <h4 style="color: #fff; font-size: 0.92rem; margin-bottom: 0.4rem;">🔢 Concrete Math Example: How Friction Destroys Small Profits</h4>
+      <div class="grid-3" style="gap: 0.75rem; font-size: 0.84rem; margin-top: 0.5rem;">
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Trade Turnover:</span>
+          <strong>Buy 100 shares @ ₹1,000 (₹1,00,000)<br>Sell @ ₹1,008 (₹1,00,800)</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Gross Profit vs Total Fees:</span>
+          <strong>Gross Gain: +₹800.00<br>Fees (STT, Brok, GST): -₹245.00</strong>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px;">
+          <span style="color: var(--text-muted); display: block;">Tax & What You Keep:</span>
+          <strong style="color: #fbbf24;">STCG 20% on Net: -₹111.00<br>Actual In Hand: ₹444.00 (45% eaten!)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instant Interactive Knowledge Check -->
+    <div style="background: rgba(245, 158, 11, 0.05); border: 1px dashed var(--accent-amber); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+      <h4 style="color: #fbbf24; font-size: 0.92rem; margin-bottom: 0.3rem;">🧠 Quick Knowledge Check 5</h4>
+      <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.75rem;">
+        What happens if a beginner trades 15 times a day aiming for small ₹50 profits each time?
+      </p>
+      <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(5, 'A', true, '✅ Correct! Fixed brokerage (₹20/order) and STT (0.1%) exceed the tiny ₹50 gains, leading to guaranteed losses over time.')">A) Friction costs exceed the tiny gains, eroding the account</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(5, 'B', false, '❌ Incorrect. Brokers love frequent trading because they earn fees on every order.')">B) The broker cancels your account for trading too much</button>
+        <button class="btn btn-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="checkQuiz(5, 'C', false, '❌ Incorrect. Frequent trading almost always underperforms patient investing due to friction.')">C) You automatically beat the market index</button>
+      </div>
+      <div id="quiz-feedback-5" style="display: none; margin-top: 0.75rem; font-size: 0.84rem; padding: 0.5rem 0.75rem; border-radius: 4px;"></div>
+    </div>
+
+    <!-- Practical Hands-On Task -->
+    <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 1.25rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="badge badge-emerald" style="font-size: 0.72rem;">📝 Practice Task 5</span>
+          <h4 style="color: #fff; margin-top: 0.3rem; font-size: 0.95rem;">Review Your Realized Friction & Drawdown Report</h4>
+          <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.5;">
+            <strong>Step 1:</strong> Visit your <strong>Drawdown Report</strong>. <br>
+            <strong>Step 2:</strong> Look at the "Friction Drag & Regulatory Fees" panel: see exactly how much virtual money you have paid in STT and brokerage so far. <br>
+            <strong>Step 3:</strong> Listen to your automated daily voice briefing!
+          </p>
+        </div>
+        <a href="{{ url_for('report_route') }}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem 0.9rem;">
+          View Report →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Audio Narration Script for Academy Overview -->
+<div id="academy-overview-speech" style="display: none;">
+  Welcome to the Invest IQ Stock Market Academy.
+  A share represents fractional ownership in a real company like Reliance or Infosys.
+  Prices fluctuate based on supply and demand.
+  Candlestick charts show you the intra-day battle between buyers and sellers with four key prices: Open, High, Low, and Close.
+  Technical indicators like R S I, M A C D, and Bollinger Bands measure speed, momentum, and volatility.
+  Remember that trading friction like S T T and brokerage eats into returns, so discipline and risk management are your greatest assets.
+</div>
+
+<script>
+function updateTaskProgress() {
+  const checkboxes = [
+    document.getElementById('task-chk-1'),
+    document.getElementById('task-chk-2'),
+    document.getElementById('task-chk-3'),
+    document.getElementById('task-chk-4'),
+    document.getElementById('task-chk-5')
+  ];
+
+  let doneCount = 0;
+  checkboxes.forEach(c => {
+    if (c && c.checked) doneCount++;
+  });
+
+  const badge = document.getElementById('progress-badge');
+  if (badge) {
+    badge.innerText = `${doneCount} / 5 Tasks Done`;
+    if (doneCount === 5) {
+      badge.className = 'badge badge-emerald';
+      badge.innerText = '🎉 All 5 Tasks Complete!';
+    } else {
+      badge.className = 'badge badge-indigo';
+    }
+  }
+
+  // Save to localStorage so student's progress persists across sessions
+  const progressState = checkboxes.map(c => c ? c.checked : false);
+  localStorage.setItem('investiq_academy_progress', JSON.stringify(progressState));
+}
+
+function checkQuiz(quizNum, option, isCorrect, explanation) {
+  const feedbackEl = document.getElementById(`quiz-feedback-${quizNum}`);
+  if (!feedbackEl) return;
+  
+  feedbackEl.style.display = 'block';
+  feedbackEl.innerHTML = explanation;
+  
+  if (isCorrect) {
+    feedbackEl.style.background = 'rgba(16, 185, 129, 0.15)';
+    feedbackEl.style.color = '#34d399';
+    feedbackEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+  } else {
+    feedbackEl.style.background = 'rgba(244, 63, 94, 0.15)';
+    feedbackEl.style.color = '#fb7185';
+    feedbackEl.style.border = '1px solid rgba(244, 63, 94, 0.3)';
+  }
+}
+
+// Load saved progress on page load
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('investiq_academy_progress') || localStorage.getItem('finsim_academy_progress') || '[]');
+    saved.forEach((val, i) => {
+      const chk = document.getElementById(`task-chk-${i + 1}`);
+      if (chk) chk.checked = !!val;
+    });
+    updateTaskProgress();
+  } catch(e) {}
+});
+</script>
+{% endblock %}

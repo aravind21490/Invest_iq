@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Invest IQ — Virtual Market Simulator & Technical Learning{% endblock %}</title>
+  
+  <!-- Modern Fintech Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- shadcn-fintech Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Chart.js for Financial Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- App Shell with Collapsible Left Sidebar + Sticky Topbar -->
+  <div class="app-shell" id="app-shell">
+
+    <!-- Collapsible Sidebar (shadcn-fintech structure) -->
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar Navigation">
+      <!-- Logo Block -->
+      <div class="sidebar-header">
+        <a href="{{ url_for('dashboard_route') }}" class="sidebar-logo" title="Invest IQ Dashboard">
+          <div class="logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 3 7 7 4-4 7 7"/>
+              <path d="M14 6h7v7"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">Invest <span style="color: var(--kite-blue);">IQ</span></span>
+            <span class="logo-subtitle">Market Simulator</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Grouped Nav Items -->
+      <nav class="sidebar-nav">
+        <!-- Daily Group -->
+        <div class="nav-group-title">Daily</div>
+        
+        <a href="{{ url_for('dashboard_route') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" title="Overview & Market Regimes">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          <span class="nav-label">Overview</span>
+        </a>
+
+        <a href="{{ url_for('screener_route') }}" class="nav-item {% if active_page == 'screener' %}active{% endif %}" title="Educational Technical Screener">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span class="nav-label">Screener</span>
+          <span class="nav-pill" style="color: var(--kite-green); border-color: rgba(16,185,129,0.3);">50+ NSE</span>
+        </a>
+
+        <a href="{{ url_for('portfolio_route') }}" class="nav-item {% if active_page == 'portfolio' %}active{% endif %}" title="Virtual Portfolio & Holdings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+          </svg>
+          <span class="nav-label">Portfolio</span>
+        </a>
+
+        <!-- Trading & Execution Group -->
+        <div class="nav-group-title">Trading & Execution</div>
+
+        <a href="{{ url_for('broker_settings_route') }}" class="nav-item {% if active_page == 'broker_settings' %}active{% endif %}" title="Zerodha Kite Paper Bridge">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span class="nav-label">Kite Bridge</span>
+          <span class="nav-pill" style="color: #ff5722; border-color: rgba(255,87,34,0.3);">Paper</span>
+        </a>
+
+        <a href="{{ url_for('report_route') }}" class="nav-item {% if active_page == 'report' %}active{% endif %}" title="Trade History & Audit Journal">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span class="nav-label">Trade History</span>
+        </a>
+
+        <!-- Insights & Learning Group -->
+        <div class="nav-group-title">Insights & Learning</div>
+
+        <a href="{{ url_for('learn_route') }}" class="nav-item {% if active_page == 'learn' %}active{% endif %}" title="Technical Indicator Academy">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="M6 6h10"/>
+            <path d="M6 10h10"/>
+          </svg>
+          <span class="nav-label">Academy</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer / User Profile Card -->
+      <div class="sidebar-footer">
+        {% if user %}
+          <div class="user-card">
+            <div class="user-avatar" title="{{ user.username }}">
+              {{ user.username[:2]|upper }}
+            </div>
+            <div class="user-details">
+              <span class="user-name" title="{{ user.username }}">{{ user.username }}</span>
+              <span class="user-cash">₹{{ "{:,.2f}".format(portfolio_summary.cash_balance if portfolio_summary else 100000.0) }}</span>
+            </div>
+            <a href="{{ url_for('logout_route') }}" class="logout-btn" title="Logout session">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </a>
+          </div>
+        {% else %}
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <a href="{{ url_for('login_route') }}" class="btn btn-outline" style="width: 100%; text-align: center; font-size: 0.8rem; padding: 0.4rem;">Sign In</a>
+            <a href="{{ url_for('register_route') }}" class="btn btn-primary" style="width: 100%; text-align: center; font-size: 0.8rem; padding: 0.4rem;">Sign Up (₹1L Cash)</a>
+          </div>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      
+      <!-- Sticky Modern Topbar -->
+      <header class="topbar">
+        <!-- Left: Sidebar Toggle & Dynamic Breadcrumb -->
+        <div class="topbar-left">
+          <button type="button" class="topbar-icon-btn" id="sidebar-toggle-btn" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle Sidebar Navigation">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <path d="M9 3v18"/>
+            </svg>
+          </button>
+
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <span class="crumb-app">Invest IQ</span>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-page">
+              {% if active_page == 'dashboard' %}Dashboard
+              {% elif active_page == 'screener' %}Screener
+              {% elif active_page == 'portfolio' %}Portfolio
+              {% elif active_page == 'learn' %}Technical Academy
+              {% elif active_page == 'report' %}Trade History & Reports
+              {% elif active_page == 'broker_settings' %}Zerodha Kite Bridge
+              {% elif active_page == 'stock_detail' %}Stock Analysis
+              {% else %}{{ active_page|capitalize if active_page else 'Dashboard' }}
+              {% endif %}
+            </span>
+          </nav>
+        </div>
+
+        <!-- Center: Market Status Indicator -->
+        <div class="topbar-center">
+          <div class="simulation-pill" title="NSE Indian Equity Market Data is delayed ~15 minutes for simulation">
+            <span class="pulse-dot"></span>
+            <span>NSE Delayed (~15m) • Simulator Active</span>
+          </div>
+        </div>
+
+        <!-- Right: ⌘K Quick Search, Cash Balance, Kite Bridge -->
+        <div class="topbar-right">
+          <!-- Quick Search -->
+          <div class="topbar-search">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input type="text" class="search-input" id="topbar-quick-search" placeholder="Search NSE stocks..." autocomplete="off" />
+            <kbd class="search-kbd">⌘K</kbd>
+          </div>
+
+          {% if user %}
+            <!-- Available Cash Balance Pill -->
+            <div class="balance-pill" title="Virtual Buying Power (Initial: ₹1,00,000)">
+              <span class="balance-label">Cash:</span>
+              <span class="balance-amount" id="nav-cash-balance">₹{{ "{:,.2f}".format(portfolio_summary.cash_balance if portfolio_summary else 100000.0) }}</span>
+            </div>
+
+            <!-- Kite Bridge Shortcut Pill -->
+            <a href="{{ url_for('broker_settings_route') }}" class="kite-status-pill" title="Configure Zerodha Kite Paper Trading Bridge">
+              <span>⚡ Kite Bridge</span>
+            </a>
+          {% else %}
+            <a href="{{ url_for('login_route') }}" class="btn btn-outline" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Sign In</a>
+            <a href="{{ url_for('register_route') }}" class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Sign Up (₹1L)</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Mandatory Regulatory Framing Banner (SIMULATION ONLY) -->
+      <aside class="disclaimer-top-banner" role="complementary" aria-label="Educational Disclaimer">
+        <span class="disclaimer-badge">SIMULATION ONLY</span>
+        <span>Invest IQ is strictly an educational simulator with virtual currency. NOT real trading, NOT investment advice, NOT SEBI-regulated.</span>
+      </aside>
+
+      <!-- Flash Messages & Behavioral Guardrail Alerts -->
+      <div style="padding: 1.25rem 2rem 0; max-width: 1400px; width: 100%; margin: 0 auto;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                <span>{{ msg }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Behavioral Guardrail Notifications (Loss-Streak Cooldown or Mandatory Reflection) -->
+        {% if portfolio_summary and portfolio_summary.is_in_cooldown %}
+          <div class="alert alert-danger" id="cooldown-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <span>⏱️ <strong>Behavioral Cooldown Active:</strong> {{ portfolio_summary.lock_reason }}</span>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: var(--radius-xs); padding: 0.3rem 0.75rem; font-family: var(--font-mono); font-weight: 700; color: #ff8a80; font-size: 0.88rem; white-space: nowrap;">
+              <span>Cool-off: </span><span id="cooldown-timer-display" data-seconds="{{ portfolio_summary.cooldown_seconds_left }}">--:--</span>
+            </div>
+          </div>
+        {% elif portfolio_summary and portfolio_summary.is_locked_for_reflection %}
+          <div class="alert alert-warning" id="reflection-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <span>⚠️ <strong>Mandatory Reflection Gate:</strong> {{ portfolio_summary.lock_reason }}</span>
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline" style="border-color: #fbbf24; color: #fbbf24; font-weight: 700; padding: 0.25rem 0.75rem; font-size: 0.8rem;" onclick="openReflectionModal()">
+                🧠 Document Reflection Now
+              </button>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Main Page Content Block -->
+      <main class="page-content main-content">
+        {% block content %}{% endblock %}
+      </main>
+
+      <!-- Footer (Clean Fintech Credit & Legal Framing) -->
+      <footer class="footer">
+        <p style="margin-bottom: 0.4rem; font-weight: 600; color: var(--text-primary);">
+          Invest IQ — Virtual Market Simulator & Technical Learning
+        </p>
+        <p style="font-size: 0.78rem; max-width: 820px; margin: 0 auto; line-height: 1.5; color: var(--text-tertiary);">
+          <strong>Legal Notice:</strong> This platform is designed solely for educational analysis and practice trading using virtual funds. Real historical NSE market data is delayed (~15 minutes) or sliced historically. Historical win rates and technical indicators are computed probabilistic statistics, not financial advisory. Invest IQ is not a SEBI Registered Investment Adviser (RIA).
+        </p>
+        <p style="margin-top: 0.8rem; font-size: 0.75rem; color: var(--text-tertiary);">
+          Engineered with Python (Flask), SQLite & Native HTML5 SpeechSynthesis • Zero Cloud Billing (₹0 Stack)
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Mandatory Trade Reflection Modal (Triggered on loss or lock) -->
+  <div id="global-reflection-modal" class="modal-overlay" style="display: none; z-index: 9999;">
+    <div class="kite-modal" style="max-width: 520px; border-top: 4px solid var(--accent-amber);">
+      <div class="kite-modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.3rem;">🧠</span>
+          <div>
+            <strong style="color: #ffffff; font-size: 1rem;">Mandatory Trade Reflection Gate</strong>
+            <div style="font-size: 0.72rem; color: #fbbf24; font-weight: 600;">Behavioral Guardrail Active</div>
+          </div>
+        </div>
+        <button type="button" onclick="closeReflectionModal()" style="background: none; border: none; color: var(--text-tertiary); font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+
+      <div style="padding: 1.25rem;">
+        <p id="global-reflection-reason" style="font-size: 0.84rem; color: #fef3c7; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 0.75rem 0.9rem; border-radius: var(--radius-xs); line-height: 1.5; margin-bottom: 1.2rem;">
+          {{ portfolio_summary.lock_reason if portfolio_summary and portfolio_summary.lock_reason else 'A losing trade has been executed. In order to protect you from emotional revenge trading, write your trade reflection below to unlock simulator trading.' }}
+        </p>
+
+        <form id="global-reflection-form" onsubmit="submitGlobalReflection(event)">
+          <div class="form-group" style="margin-bottom: 0.9rem;">
+            <label class="form-label" for="global-ref-thesis" style="font-size: 0.8rem;">1. Original Entry Thesis</label>
+            <input type="text" id="global-ref-thesis" class="form-control" placeholder="e.g. Bought anticipating an RSI oversold bounce from 26..." required style="font-size: 0.82rem;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.9rem;">
+            <label class="form-label" for="global-ref-reason" style="font-size: 0.8rem;">2. What caused the trade to lose?</label>
+            <input type="text" id="global-ref-reason" class="form-control" placeholder="e.g. Violated support on heavy institutional selling volume..." required style="font-size: 0.82rem;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label class="form-label" for="global-ref-lesson" style="font-size: 0.8rem;">3. Concrete Lesson for Future Trades</label>
+            <textarea id="global-ref-lesson" class="form-control" rows="3" placeholder="e.g. Always set a predefined stop loss at 2% instead of hoping for a turnaround..." required style="font-size: 0.82rem;"></textarea>
+          </div>
+
+          <div id="global-ref-error" class="alert alert-danger" style="display: none; font-size: 0.8rem; margin-bottom: 1rem;"></div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeReflectionModal()">
+              Close
+            </button>
+            <button type="submit" id="global-ref-submit-btn" class="btn btn-primary" style="flex: 2; background: #f59e0b; color: #000; font-weight: 700;">
+              Submit Reflection & Unlock
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Browser-Native Voice Narration Script -->
+  <script src="{{ url_for('static', filename='voice.js') }}"></script>
+  
+  <script>
+  // Sidebar Collapse / Expand State Management
+  (function initSidebar() {
+    const appShell = document.getElementById('app-shell');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    if (!appShell || !toggleBtn) return;
+
+    // Read stored preference
+    const isCollapsed = localStorage.getItem('investiq_sidebar_collapsed') === 'true';
+    if (isCollapsed) {
+      appShell.classList.add('sidebar-collapsed');
+    }
+
+    toggleBtn.addEventListener('click', function() {
+      appShell.classList.toggle('sidebar-collapsed');
+      const collapsedNow = appShell.classList.contains('sidebar-collapsed');
+      localStorage.setItem('investiq_sidebar_collapsed', collapsedNow ? 'true' : 'false');
+    });
+
+    // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleBtn.click();
+      }
+    });
+  })();
+
+  // Quick Search (⌘K / Ctrl+K)
+  (function initQuickSearch() {
+    const searchInput = document.getElementById('topbar-quick-search');
+    if (!searchInput) return;
+
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const query = searchInput.value.trim();
+        if (query) {
+          window.location.href = "{{ url_for('screener_route') }}?q=" + encodeURIComponent(query);
+        }
+      }
+    });
+  })();
+
+  // Live Cooldown Countdown Engine
+  (function() {
+    const timerEl = document.getElementById('cooldown-timer-display');
+    if (!timerEl) return;
+    let secondsLeft = parseInt(timerEl.getAttribute('data-seconds'), 10) || 0;
+
+    function renderTime() {
+      if (secondsLeft <= 0) {
+        timerEl.innerText = '00:00 (Unlocked)';
+        const banner = document.getElementById('cooldown-banner');
+        if (banner) {
+          banner.className = 'alert alert-success';
+          banner.innerHTML = '<span>✅ <strong>Cooldown Complete:</strong> Behavioral cool-off elapsed. Simulator unlocked.</span>';
+        }
+        setTimeout(() => window.location.reload(), 1800);
+        return;
+      }
+      const mins = Math.floor(secondsLeft / 60);
+      const secs = secondsLeft % 60;
+      timerEl.innerText = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs} remaining`;
+      secondsLeft--;
+      setTimeout(renderTime, 1000);
+    }
+    renderTime();
+  })();
+
+  // Global Reflection Modal Controls
+  window.openReflectionModal = function(reason) {
+    if (reason) {
+      const reasonEl = document.getElementById('global-reflection-reason');
+      if (reasonEl) reasonEl.innerText = reason;
+    }
+    const modal = document.getElementById('global-reflection-modal');
+    if (modal) modal.style.display = 'flex';
+  };
+
+  window.closeReflectionModal = function() {
+    const modal = document.getElementById('global-reflection-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.submitGlobalReflection = async function(e) {
+    e.preventDefault();
+    const thesis = document.getElementById('global-ref-thesis').value.trim();
+    const reason = document.getElementById('global-ref-reason').value.trim();
+    const lesson = document.getElementById('global-ref-lesson').value.trim();
+    const errorBox = document.getElementById('global-ref-error');
+    const submitBtn = document.getElementById('global-ref-submit-btn');
+
+    if (!thesis || !reason || !lesson) {
+      errorBox.innerText = 'Please complete all three reflection prompts.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Submitting Reflection...';
+    errorBox.style.display = 'none';
+
+    try {
+      const res = await fetch("{{ url_for('api_reflect_route') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ thesis, reason_for_loss: reason, lesson_learned: lesson })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeReflectionModal();
+        alert("✅ Reflection submitted successfully. Thank you for building emotional discipline!");
+        window.location.reload();
+      } else {
+        errorBox.innerText = data.error || 'Failed to submit reflection.';
+        errorBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Submit Reflection & Unlock';
+      }
+    } catch (err) {
+      errorBox.innerText = 'Network connection failed while submitting reflection.';
+      errorBox.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.innerText = 'Submit Reflection & Unlock';
+    }
+  };
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

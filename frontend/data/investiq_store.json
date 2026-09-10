@@ -1,0 +1,557 @@
+{
+  "users": [
+    {
+      "id": "usr_demo",
+      "phone": "+15550192834",
+      "email": "demo@investiq.ai",
+      "name": "User 2834",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T06:13:02.183Z"
+    },
+    {
+      "id": "usr_haw08l74",
+      "email": "alex.trader@gmail.com",
+      "name": "Alex Vance",
+      "authProvider": "google",
+      "createdAt": "2026-09-10T06:17:29.448Z"
+    },
+    {
+      "id": "usr_difh6bs9",
+      "phone": "+15550198888",
+      "name": "Jordan Belfort",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T06:30:46.558Z"
+    },
+    {
+      "id": "usr_i4yy4bug",
+      "phone": "+919032817205",
+      "name": "Trader 7205",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T06:42:40.981Z"
+    },
+    {
+      "id": "usr_kbuu88s2",
+      "email": "alex.investor@gmail.com",
+      "name": "Alex Vance",
+      "authProvider": "google",
+      "createdAt": "2026-09-10T06:43:24.913Z"
+    },
+    {
+      "id": "usr_y5gzrwh6",
+      "phone": "+19032817205",
+      "name": "Arvind",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T06:44:00.955Z"
+    },
+    {
+      "id": "usr_6qi3kzps",
+      "phone": "+916305478938",
+      "name": "nagasri",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T07:17:19.648Z"
+    },
+    {
+      "id": "usr_cowsed0h",
+      "phone": "+919032826165",
+      "name": "Aravind",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T08:20:43.913Z"
+    },
+    {
+      "id": "usr_jf78aqae",
+      "phone": "+9032817052",
+      "name": "Trader 7052",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T12:51:25.090Z"
+    },
+    {
+      "id": "usr_022tsfug",
+      "phone": "+9032817205",
+      "name": "Trader 7205",
+      "authProvider": "phone",
+      "createdAt": "2026-09-10T13:01:21.017Z"
+    }
+  ],
+  "sessions": [
+    {
+      "token": "iqs_sefxafpqb4_1789020981072_g8v05xed",
+      "userId": "usr_demo",
+      "createdAt": "2026-09-10T06:16:21.072Z",
+      "expiresAt": "2026-10-10T06:16:21.072Z"
+    },
+    {
+      "token": "iqs_drap4fi2jdj_1789021049451_0s42bfzj",
+      "userId": "usr_haw08l74",
+      "createdAt": "2026-09-10T06:17:29.451Z",
+      "expiresAt": "2026-10-10T06:17:29.451Z"
+    },
+    {
+      "token": "iqs_gmsq8wo1305_1789028530542_5d5a1jd6",
+      "userId": "usr_demo",
+      "createdAt": "2026-09-10T08:22:10.542Z",
+      "expiresAt": "2026-10-10T08:22:10.542Z"
+    },
+    {
+      "token": "iqs_n7ykd0qtsa_1789043945766_xb4e7o4z",
+      "userId": "usr_i4yy4bug",
+      "createdAt": "2026-09-10T12:39:05.766Z",
+      "expiresAt": "2026-10-10T12:39:05.766Z"
+    },
+    {
+      "token": "iqs_ht39w96yk7_1789043973418_uj9intv4",
+      "userId": "usr_i4yy4bug",
+      "createdAt": "2026-09-10T12:39:33.419Z",
+      "expiresAt": "2026-10-10T12:39:33.418Z"
+    },
+    {
+      "token": "iqs_32u5qun5k22_1789045362612_tuk4673z",
+      "userId": "usr_kbuu88s2",
+      "createdAt": "2026-09-10T13:02:42.612Z",
+      "expiresAt": "2026-10-10T13:02:42.612Z"
+    },
+    {
+      "token": "iqs_5j00w3ihon_1789046903525_ryu0g6eo",
+      "userId": "usr_kbuu88s2",
+      "createdAt": "2026-09-10T13:28:23.525Z",
+      "expiresAt": "2026-10-10T13:28:23.525Z"
+    }
+  ],
+  "portfolios": [
+    {
+      "userId": "usr_demo",
+      "cashBalance": 325400,
+      "initialBalance": 500000,
+      "updatedAt": "2026-09-10T06:13:02.183Z"
+    },
+    {
+      "userId": "usr_haw08l74",
+      "cashBalance": 97763.3,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T06:22:52.028Z"
+    },
+    {
+      "userId": "usr_difh6bs9",
+      "cashBalance": 95269.90000000001,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T07:10:21.242Z"
+    },
+    {
+      "userId": "usr_i4yy4bug",
+      "cashBalance": 83265,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T12:39:33.475Z"
+    },
+    {
+      "userId": "usr_kbuu88s2",
+      "cashBalance": 87260,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T14:09:19.737Z"
+    },
+    {
+      "userId": "usr_y5gzrwh6",
+      "cashBalance": 93289.9,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T06:47:14.509Z"
+    },
+    {
+      "userId": "usr_6qi3kzps",
+      "cashBalance": 100000,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T07:17:19.648Z"
+    },
+    {
+      "userId": "usr_cowsed0h",
+      "cashBalance": 100000,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T08:20:43.913Z"
+    },
+    {
+      "userId": "usr_9u1m747b",
+      "cashBalance": 100000,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T08:56:22.644Z"
+    },
+    {
+      "userId": "usr_jf78aqae",
+      "cashBalance": 82164,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-10T12:59:59.269Z"
+    },
+    {
+      "userId": "usr_022tsfug",
+      "cashBalance": 151000,
+      "initialBalance": 151000,
+      "updatedAt": "2026-09-10T13:21:29.996Z"
+    }
+  ],
+  "positions": [
+    {
+      "id": "pos_demo_1",
+      "userId": "usr_demo",
+      "symbol": "RELIANCE.NS",
+      "name": "Reliance Industries Limited",
+      "shares": 50,
+      "avgBuyPrice": 1250,
+      "sector": "Energy & Conglomerate",
+      "updatedAt": "2026-09-10T06:13:02.183Z"
+    },
+    {
+      "id": "pos_demo_2",
+      "userId": "usr_demo",
+      "symbol": "TCS.NS",
+      "name": "Tata Consultancy Services",
+      "shares": 30,
+      "avgBuyPrice": 2160,
+      "sector": "Information Technology",
+      "updatedAt": "2026-09-10T06:13:02.183Z"
+    },
+    {
+      "id": "pos_demo_3",
+      "userId": "usr_demo",
+      "symbol": "TMPV.NS",
+      "name": "Tata Motors Pass. Vehicles",
+      "shares": 50,
+      "avgBuyPrice": 950,
+      "sector": "Automobile & EV",
+      "updatedAt": "2026-09-10T06:13:02.183Z"
+    },
+    {
+      "id": "pos_jtm66i3m",
+      "userId": "usr_haw08l74",
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "shares": 10,
+      "avgBuyPrice": 223.67,
+      "sector": "Semiconductors & AI",
+      "updatedAt": "2026-09-10T06:22:52.028Z"
+    },
+    {
+      "id": "pos_yp7gsodv",
+      "userId": "usr_difh6bs9",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "shares": 15,
+      "avgBuyPrice": 315.34,
+      "sector": "Consumer Electronics",
+      "updatedAt": "2026-09-10T07:10:21.242Z"
+    },
+    {
+      "id": "pos_n0jdbwfz",
+      "userId": "usr_y5gzrwh6",
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "shares": 30,
+      "avgBuyPrice": 223.67,
+      "sector": "Semiconductors & AI",
+      "updatedAt": "2026-09-10T06:47:14.509Z"
+    },
+    {
+      "id": "pos_21z4prbm",
+      "userId": "usr_i4yy4bug",
+      "symbol": "INFY.NS",
+      "name": "INFOSYS LIMITED",
+      "shares": 10,
+      "avgBuyPrice": 1036.5,
+      "sector": "Information Technology",
+      "updatedAt": "2026-09-10T12:39:06.245Z"
+    },
+    {
+      "id": "pos_ivg4e7bh",
+      "userId": "usr_i4yy4bug",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "shares": 5,
+      "avgBuyPrice": 1274,
+      "sector": "Energy & Conglomerate",
+      "updatedAt": "2026-09-10T12:39:33.475Z"
+    },
+    {
+      "id": "pos_wxlm460m",
+      "userId": "usr_jf78aqae",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "shares": 14,
+      "avgBuyPrice": 1274,
+      "sector": "Energy & Conglomerate",
+      "updatedAt": "2026-09-10T12:59:59.270Z"
+    },
+    {
+      "id": "pos_ds8huzk1",
+      "userId": "usr_kbuu88s2",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "shares": 10,
+      "avgBuyPrice": 1274,
+      "sector": "Energy & Conglomerate",
+      "updatedAt": "2026-09-10T14:09:19.738Z"
+    }
+  ],
+  "trades": [
+    {
+      "id": "ORD-94281",
+      "userId": "usr_demo",
+      "symbol": "RELIANCE.NS",
+      "name": "Reliance Industries Limited",
+      "type": "BUY",
+      "shares": 50,
+      "price": 1250,
+      "amount": 62500,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T02:13:02.183Z"
+    },
+    {
+      "id": "ORD-87192",
+      "userId": "usr_demo",
+      "symbol": "TCS.NS",
+      "name": "Tata Consultancy Services",
+      "type": "BUY",
+      "shares": 30,
+      "price": 2160,
+      "amount": 64800,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-09T06:13:02.183Z"
+    },
+    {
+      "id": "ORD-73194",
+      "userId": "usr_demo",
+      "symbol": "TMPV.NS",
+      "name": "Tata Motors Pass. Vehicles",
+      "type": "BUY",
+      "shares": 50,
+      "price": 950,
+      "amount": 47500,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-08T04:15:00.000Z"
+    },
+    {
+      "id": "ORD-35723",
+      "userId": "usr_haw08l74",
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "type": "BUY",
+      "shares": 10,
+      "price": 223.67,
+      "amount": 2236.7,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T06:22:52.028Z"
+    },
+    {
+      "id": "ORD-18497",
+      "userId": "usr_difh6bs9",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "type": "BUY",
+      "shares": 5,
+      "price": 315.34,
+      "amount": 1576.6999999999998,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T06:30:46.823Z"
+    },
+    {
+      "id": "ORD-45796",
+      "userId": "usr_y5gzrwh6",
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "type": "BUY",
+      "shares": 30,
+      "price": 223.67,
+      "amount": 6710.099999999999,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T06:47:14.509Z"
+    },
+    {
+      "id": "ORD-24848",
+      "userId": "usr_difh6bs9",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "type": "BUY",
+      "shares": 5,
+      "price": 315.34,
+      "amount": 1576.6999999999998,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T06:58:34.936Z"
+    },
+    {
+      "id": "ORD-69564",
+      "userId": "usr_difh6bs9",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "type": "BUY",
+      "shares": 5,
+      "price": 315.34,
+      "amount": 1576.6999999999998,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T07:10:21.242Z"
+    },
+    {
+      "id": "ORD-58344",
+      "userId": "usr_i4yy4bug",
+      "symbol": "INFY.NS",
+      "name": "INFOSYS LIMITED",
+      "type": "BUY",
+      "shares": 10,
+      "price": 1036.5,
+      "amount": 10365,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T12:39:06.245Z"
+    },
+    {
+      "id": "ORD-29773",
+      "userId": "usr_i4yy4bug",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 5,
+      "price": 1274,
+      "amount": 6370,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T12:39:33.475Z"
+    },
+    {
+      "id": "ORD-50157",
+      "userId": "usr_jf78aqae",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 4,
+      "price": 1274,
+      "amount": 5096,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T12:58:32.648Z"
+    },
+    {
+      "id": "ORD-40719",
+      "userId": "usr_jf78aqae",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 10,
+      "price": 1274,
+      "amount": 12740,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T12:59:59.270Z"
+    },
+    {
+      "id": "ORD-95953",
+      "userId": "usr_kbuu88s2",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 10,
+      "price": 1274,
+      "amount": 12740,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-10T14:09:19.738Z"
+    }
+  ],
+  "learnProgress": [
+    {
+      "userId": "usr_demo",
+      "completedTopics": [
+        "t1-1",
+        "t1-2",
+        "t1-3"
+      ],
+      "quizScores": {
+        "t1-1": 100,
+        "t1-2": 100,
+        "t1-3": 100
+      },
+      "streakDays": 3,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_haw08l74",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_difh6bs9",
+      "completedTopics": [
+        "t1-1"
+      ],
+      "quizScores": {
+        "t1-1": 100
+      },
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_i4yy4bug",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_kbuu88s2",
+      "completedTopics": [
+        "t1-1",
+        "t6-1"
+      ],
+      "quizScores": {
+        "t1-1": 100,
+        "t6-1": 100
+      },
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_y5gzrwh6",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_6qi3kzps",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_cowsed0h",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_9u1m747b",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_jf78aqae",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_022tsfug",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-10"
+    }
+  ]
+}

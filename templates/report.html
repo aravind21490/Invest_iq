@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Performance & Risk Report — Invest IQ{% endblock %}
+
+{% block content %}
+<!-- Report Header -->
+<div class="section-header" style="margin-bottom: 1.25rem;">
+  <div>
+    <h1>Daily Performance & Risk Report</h1>
+    <p class="section-subtitle">
+      Comprehensive review: Volatility, Drawdown, Friction Analysis, and Behavioral Journal
+    </p>
+  </div>
+  <div>
+    <button class="btn btn-voice" onclick="narrateExplanation('eod-report-speech', this)">
+      🔊 Listen to Daily Audio Briefing
+    </button>
+  </div>
+</div>
+
+<!-- EOD Voice Narrative Source (Hidden / Clean formatted for SpeechSynthesis) -->
+<div id="eod-report-speech" style="display: none;">
+  Invest IQ Daily Performance Report.
+  Your total virtual portfolio is valued at Rupees {{ "{:,.2f}".format(summary.total_portfolio_value) }}.
+  Overall net profit and loss stands at Rupees {{ "{:,.2f}".format(summary.total_pnl) }}, representing a return of {{ "{:.2f}".format(summary.total_return_pct) }} percent.
+  You have paid Rupees {{ "{:,.2f}".format(summary.total_charges_paid) }} in transaction friction including brokerage, S T T, and G S T.
+  Short Term Capital Gains tax provision is Rupees {{ "{:,.2f}".format(summary.stcg_tax_provision) }}.
+  {% if summary.loss_streak > 0 %}
+    Your current loss streak is {{ summary.loss_streak }} trades. Remember to manage risk and avoid emotional revenge trading.
+  {% else %}
+    Your risk discipline is currently solid.
+  {% endif %}
+</div>
+
+<!-- Key Performance Metrics Grid (Kite Overview Style) -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+  <div class="metric-card">
+    <span class="metric-title">Total Portfolio Value</span>
+    <span class="metric-value tabular-nums">₹{{ "{:,.2f}".format(summary.total_portfolio_value) }}</span>
+    <span class="metric-sub">Starting: ₹1,00,000.00</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Win Rate on Closed Trades</span>
+    <span class="metric-value tabular-nums" style="color: var(--kite-blue);">
+      {% if report_stats.closed_trades > 0 %}
+        {{ "{:.1f}".format(report_stats.win_rate) }}%
+      {% else %}
+        N/A
+      {% endif %}
+    </span>
+    <span class="metric-sub tabular-nums">{{ report_stats.wins }} Wins / {{ report_stats.losses }} Losses</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Estimated Max Drawdown</span>
+    <span class="metric-value tabular-nums {% if report_stats.max_drawdown > 10 %}text-loss{% else %}text-white{% endif %}">
+      {{ "{:.2f}".format(report_stats.max_drawdown) }}%
+    </span>
+    <span class="metric-sub">Peak to Trough Virtual Retracement</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-title">Total Friction Drag</span>
+    <span class="metric-value tabular-nums" style="color: var(--accent-amber);">
+      ₹{{ "{:,.2f}".format(summary.total_charges_paid + summary.stcg_tax_provision) }}
+    </span>
+    <span class="metric-sub">Charges & STCG Tax</span>
+  </div>
+</div>
+
+<!-- Detailed Friction Breakdown Panel -->
+<div class="grid-2" style="margin-bottom: 2rem; gap: 1.25rem;">
+  <div class="glass-panel" style="padding: 1.25rem;">
+    <h3 style="margin-bottom: 0.75rem; color: #ffffff; font-size: 1.1rem;">💸 Where Did Your Money Go? (Friction Drag Audit)</h3>
+    <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+      In real trading, high-frequency churn severely erodes capital through Indian regulatory and exchange taxes. 
+      Invest IQ simulates each charge to teach realistic capital preservation.
+    </p>
+
+    <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; font-size: 0.85rem;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary);">Total Realized Gross P&L:</span>
+        <span style="font-weight: 700; color: #ffffff;" class="tabular-nums">₹{{ "{:,.2f}".format(report_stats.gross_pnl) }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary);">Brokerage Paid (Zerodha/Groww style):</span>
+        <span style="color: var(--accent-amber);" class="tabular-nums">₹{{ "{:,.2f}".format(report_stats.total_brokerage) }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary);">STT (Securities Transaction Tax):</span>
+        <span style="color: var(--accent-amber);" class="tabular-nums">₹{{ "{:,.2f}".format(report_stats.total_stt) }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary);">Exchange Charges, SEBI, Stamp & GST:</span>
+        <span style="color: var(--accent-amber);" class="tabular-nums">₹{{ "{:,.2f}".format(report_stats.total_other_charges) }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <span style="color: var(--text-secondary);">STCG Provision (20% on Profits):</span>
+        <span style="color: var(--accent-amber);" class="tabular-nums">₹{{ "{:,.2f}".format(summary.stcg_tax_provision) }}</span>
+      </div>
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.65rem; margin-top: 0.65rem; display: flex; justify-content: space-between; font-weight: 800; font-size: 0.95rem;">
+        <span style="color: #ffffff;">Net Retained P&L:</span>
+        <span class="tabular-nums {% if summary.total_realized_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}">
+          {% if summary.total_realized_pnl >= 0 %}+{% endif %}₹{{ "{:,.2f}".format(summary.total_realized_pnl) }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Psychological & Behavioral Scorecard -->
+  <div class="glass-panel" style="padding: 1.25rem;">
+    <h3 style="margin-bottom: 0.75rem; color: #ffffff; font-size: 1.1rem;">🧘 Psychological & Behavioral Scorecard</h3>
+    <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+      Professional traders succeed not by finding holy-grail indicators, but through emotional discipline and honoring risk limits.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); padding: 0.85rem; border-radius: var(--radius-sm);">
+        <div style="font-size: 0.74rem; color: var(--text-tertiary); text-transform: uppercase; font-weight: 700;">Consecutive Loss Streak</div>
+        <div style="font-size: 1.3rem; font-weight: 800;" class="tabular-nums {% if summary.loss_streak >= 2 %}text-loss{% else %}text-white{% endif %}">
+          {{ summary.loss_streak }} Trades
+        </div>
+        <div style="font-size: 0.74rem; color: var(--text-tertiary); margin-top: 0.2rem;">
+          Trigger threshold: 2+ consecutive losses instates a mandatory 5-minute cool-off.
+        </div>
+      </div>
+
+      <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); padding: 0.85rem; border-radius: var(--radius-sm);">
+        <div style="font-size: 0.74rem; color: var(--text-tertiary); text-transform: uppercase; font-weight: 700;">Reflections Journaled</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: var(--kite-green);" class="tabular-nums">
+          {{ summary.reflections_count }} Lessons Recorded
+        </div>
+        <div style="font-size: 0.74rem; color: var(--text-tertiary); margin-top: 0.2rem;">
+          Every completed reflection builds intuition for live market volatility.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reflection Journal History -->
+<div class="glass-panel" style="padding: 1.25rem;">
+  <div class="section-header" style="margin-bottom: 1rem;">
+    <div>
+      <h2 style="font-size: 1.15rem;">Lessons Learned & Reflection Journal ({{ reflections|length }})</h2>
+      <p class="section-subtitle">Your documented psychological post-mortems after losing trades</p>
+    </div>
+  </div>
+
+  {% if reflections %}
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+      {% for r in reflections|reverse %}
+        <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-left: 3px solid var(--accent-amber); padding: 1.15rem; border-radius: var(--radius-sm);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: 700; color: #fbbf24; font-size: 0.88rem;">Reflection #{{ r.id }} (Trade #{{ r.trade_id }})</span>
+            <span style="font-size: 0.76rem; color: var(--text-tertiary);">{{ r.timestamp }}</span>
+          </div>
+
+          <div style="margin-bottom: 0.4rem; font-size: 0.84rem;">
+            <strong style="color: #ffffff;">Initial Thesis:</strong> <span style="color: var(--text-secondary);">{{ r.thesis }}</span>
+          </div>
+
+          <div style="margin-bottom: 0.4rem; font-size: 0.84rem;">
+            <strong style="color: var(--kite-red);">Reason for Loss:</strong> <span style="color: #fca5a5;">{{ r.reason_for_loss }}</span>
+          </div>
+
+          <div style="font-size: 0.84rem;">
+            <strong style="color: var(--kite-green);">Lesson for Future:</strong> <span style="color: #a7f3d0;">{{ r.lesson_learned }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 2.5rem; color: var(--text-tertiary); font-size: 0.85rem;">
+      No reflections logged yet. When you experience a virtual loss, you will journal your analysis here.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
