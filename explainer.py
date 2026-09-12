@@ -38,7 +38,11 @@ def generate_deterministic_explanation(stock_analysis: Dict[str, Any]) -> Dict[s
     signals = stock_analysis.get("signals", [])
     snapshot = stock_analysis.get("snapshot", {})
 
-    primary = signals[0] if (signals and isinstance(signals[0], dict)) else {"signal_type": "NEUTRAL_CONSOLIDATION", "key_stats": {}}
+    primary = (
+        (signals[0] if (signals and isinstance(signals[0], dict)) else None)
+        or stock_analysis.get("primary_signal")
+        or {"signal_type": "NEUTRAL_CONSOLIDATION", "key_stats": {}}
+    )
     sig_type = primary.get("signal_type", "NEUTRAL_CONSOLIDATION") if isinstance(primary, dict) else "NEUTRAL_CONSOLIDATION"
     raw_stats = primary.get("key_stats", {}) if isinstance(primary, dict) else {}
     stats: Dict[str, Any] = raw_stats if isinstance(raw_stats, dict) else {}

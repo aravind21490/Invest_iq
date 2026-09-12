@@ -21,6 +21,10 @@ class TestKiteBroker(unittest.TestCase):
             cls.user_id = cursor.fetchone()["id"]
             conn.close()
 
+    def setUp(self):
+        from models import reset_user_portfolio
+        reset_user_portfolio(self.user_id)
+
     def test_estimate_order_impact_cnc(self):
         broker = KiteBroker(user_id=self.user_id, mode="SIMULATED")
         impact = broker.estimate_order_impact(

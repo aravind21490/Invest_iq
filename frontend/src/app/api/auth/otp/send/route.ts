@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = requestOtp(identifier);
+    const result = await requestOtp(identifier);
     if (!result.success) {
       return NextResponse.json(result, { status: 400 });
     }

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = verifyOtp(identifier, code, name);
+    const result = await verifyOtp(identifier, code, name);
     if (!result.success || !result.token) {
       return NextResponse.json(result, { status: 400 });
     }

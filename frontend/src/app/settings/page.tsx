@@ -147,6 +147,66 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Zerodha Kite Paper Trading Bridge Card */}
+      <div className="fintech-card p-6 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center font-bold text-sm">
+              ⚡
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-foreground">
+                Zerodha Kite Connect Bridge
+              </h3>
+              <span className="text-xs text-muted-foreground">
+                Institutional Paper Order Routing & Optional Live Personal API
+              </span>
+            </div>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            Sandbox Active (₹0 Cost)
+          </span>
+        </div>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Invest IQ includes a built-in virtual broker engine patterned directly after Zerodha Kite Connect specs.
+          Test realistic order routing, margin checks, statutory taxes (STT, Stamp Duty, GST), and order states.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+            <span className="text-[11px] text-muted-foreground block font-medium">Broker Mode</span>
+            <span className="text-sm font-bold text-foreground block">Simulated Sandbox</span>
+            <span className="text-[10px] text-emerald-500 font-medium">Zero brokerage costs</span>
+          </div>
+
+          <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+            <span className="text-[11px] text-muted-foreground block font-medium">Default Product</span>
+            <span className="text-sm font-bold text-foreground block">CNC (Delivery)</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Optional Intraday (MIS)</span>
+          </div>
+
+          <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-1">
+            <span className="text-[11px] text-muted-foreground block font-medium">Safety Gate</span>
+            <span className="text-sm font-bold text-foreground block">Human-in-the-Loop</span>
+            <span className="text-[10px] text-emerald-500 font-medium">Mandatory order preview</span>
+          </div>
+        </div>
+
+        <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">
+            Want to connect your Zerodha Developer API key & secret?
+          </span>
+          <a
+            href="/settings/broker"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-semibold transition-all shadow-xs"
+          >
+            <span>Configure Kite Credentials & Mode</span>
+            <span className="text-xs">→</span>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

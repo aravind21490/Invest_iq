@@ -1,14 +1,21 @@
 import json
 import os
 
-with open('all_monthly_history.json') as f:
-    d = json.load(f)
-
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+YEARS = ['2021', '2022', '2023', '2024', '2025', '2026']
 
-years = ['2021', '2022', '2023', '2024', '2025', '2026']
 
-ts_output = '''// Real historical market data compiled from institutional index closing levels (NSE Nifty 50 and US S&P 500)
+def build_financial_history():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    source_json = os.path.join(base_dir, 'all_monthly_history.json')
+    if not os.path.exists(source_json):
+        print(f"Warning: {source_json} not found.")
+        return
+
+    with open(source_json, 'r', encoding='utf-8') as f:
+        d = json.load(f)
+
+    ts_output = '''// Real historical market data compiled from institutional index closing levels (NSE Nifty 50 and US S&P 500)
 // Normalized to base 100,000 starting capital for direct portfolio performance comparison.
 
 export interface MonthlyDataPoint {
@@ -43,57 +50,59 @@ export interface YearPerformanceSummary {
 export const FINANCIAL_YEARS_DATA: Record<string, YearPerformanceSummary> = {
 '''
 
-for y in years:
-    months_n = [k for k in sorted(d['nifty'].keys()) if k.startswith(y)]
-    if not months_n:
-        continue
-    
-    first_n = d['nifty'][months_n[0]]
-    last_n = d['nifty'][months_n[-1]]
-    first_s = d['sp500'][months_n[0]]
-    last_s = d['sp500'][months_n[-1]]
-    
-    n_ret = round(((last_n - first_n) / first_n) * 100, 2)
-    s_ret = round(((last_s - first_s) / first_s) * 100, 2)
-    
-    is_cur = 'true' if y == '2026' else 'false'
-    label_str = f"{y} (Live)" if y == '2026' else y
-    date_range = f"Jan {y} - Sep {y} (Live)" if y == '2026' else f"Jan {y} - Dec {y}"
-    
-    ts_output += f'  "{y}": {{\n'
-    ts_output += f'    year: "{y}",\n'
-    ts_output += f'    label: "{label_str}",\n'
-    ts_output += f'    isCurrent: {is_cur},\n'
-    ts_output += f'    dateRange: "{date_range}",\n'
-    ts_output += f'    niftyAnnualReturn: {n_ret},\n'
-    ts_output += f'    spAnnualReturn: {s_ret},\n'
-    ts_output += f'    startNifty: {first_n},\n'
-    ts_output += f'    endNifty: {last_n},\n'
-    ts_output += f'    startSP: {first_s},\n'
-    ts_output += f'    endSP: {last_s},\n'
-    ts_output += '    data: [\n'
-    
-    for idx, m_key in enumerate(months_n):
-        m_num = int(m_key.split('-')[1])
-        m_name = MONTH_NAMES[m_num - 1]
-        raw_n = d['nifty'][m_key]
-        raw_s = d['sp500'][m_key]
-        norm_n = round(100000 * (raw_n / first_n), 2)
-        norm_s = round(100000 * (raw_s / first_s), 2)
-        
-        ts_output += f'      {{\n'
-        ts_output += f'        month: "{m_name}",\n'
-        ts_output += f'        monthIndex: {m_num - 1},\n'
-        ts_output += f'        date: "{m_key}",\n'
-        ts_output += f'        niftyNormalized: {norm_n},\n'
-        ts_output += f'        spNormalized: {norm_s},\n'
-        ts_output += f'        niftyRaw: {raw_n},\n'
-        ts_output += f'        spRaw: {raw_s},\n'
-        ts_output += f'      }},\n'
-    ts_output += '    ],\n'
-    ts_output += '  },\n'
+    for y in YEARS:
+        months_n = [k for k in sorted(d['nifty'].keys()) if k.startswith(y)]
+        if not months_n:
+            continue
 
-ts_output += '''};
+        first_n = d['nifty'][months_n[0]]
+        last_n = d['nifty'][months_n[-1]]
+        first_s = d['sp500'][months_n[0]]
+        last_s = d['sp500'][months_n[-1]]
+
+        n_ret = round(((last_n - first_n) / first_n) * 100, 2)
+        s_ret = round(((last_s - first_s) / first_s) * 100, 2)
+
+        is_cur = 'true' if y == '2026' else 'false'
+        label_str = f"{y} (Live)" if y == '2026' else y
+        range_str = f"Jan {y} – Dec {y}" if y != '2026' else "Jan 2026 – Present (Live)"
+
+        ts_output += f'  "{y}": {{\n'
+        ts_output += f'    year: "{y}",\n'
+        ts_output += f'    label: "{label_str}",\n'
+        ts_output += f'    isCurrent: {is_cur},\n'
+        ts_output += f'    dateRange: "{range_str}",\n'
+        ts_output += f'    niftyAnnualReturn: {n_ret},\n'
+        ts_output += f'    spAnnualReturn: {s_ret},\n'
+        ts_output += f'    startNifty: {first_n},\n'
+        ts_output += f'    endNifty: {last_n},\n'
+        ts_output += f'    startSP: {first_s},\n'
+        ts_output += f'    endSP: {last_s},\n'
+        ts_output += '    data: [\n'
+
+        for m_str in months_n:
+            m_idx = int(m_str.split('-')[1]) - 1
+            m_name = MONTH_NAMES[m_idx]
+
+            raw_n = d['nifty'][m_str]
+            raw_s = d['sp500'][m_str]
+
+            norm_n = round((raw_n / first_n) * 100000, 2)
+            norm_s = round((raw_s / first_s) * 100000, 2)
+
+            ts_output += '      {\n'
+            ts_output += f'        month: "{m_name}",\n'
+            ts_output += f'        monthIndex: {m_idx},\n'
+            ts_output += f'        date: "{m_str}",\n'
+            ts_output += f'        niftyNormalized: {norm_n},\n'
+            ts_output += f'        spNormalized: {norm_s},\n'
+            ts_output += f'        niftyRaw: {raw_n},\n'
+            ts_output += f'        spRaw: {raw_s},\n'
+            ts_output += '      },\n'
+        ts_output += '    ],\n'
+        ts_output += '  },\n'
+
+    ts_output += '''};
 
 // Multi-Year 5-Year Trend (2021 to 2026 Live)
 export const MULTI_YEAR_DATA = [
@@ -106,8 +115,13 @@ export const MULTI_YEAR_DATA = [
 ];
 '''
 
-target_file = os.path.join('frontend', 'src', 'lib', 'financial-history.ts')
-with open(target_file, 'w') as f:
-    f.write(ts_output)
+    target_file = os.path.join(base_dir, 'frontend', 'src', 'lib', 'financial-history.ts')
+    os.makedirs(os.path.dirname(target_file), exist_ok=True)
+    with open(target_file, 'w', encoding='utf-8') as f:
+        f.write(ts_output)
 
-print(f"Generated {target_file} successfully!")
+    print(f"Generated {target_file} successfully!")
+
+
+if __name__ == '__main__':
+    build_financial_history()

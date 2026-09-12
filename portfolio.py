@@ -357,7 +357,7 @@ class VirtualPortfolio:
 
         total_portfolio_value = self.cash_balance + holdings_valuation
         total_pnl = (total_portfolio_value - self.initial_cash)
-        total_return_pct = (total_pnl / self.initial_cash) * 100.0
+        total_return_pct = ((total_pnl / self.initial_cash) * 100.0) if self.initial_cash > 0 else 0.0
 
         # Calculate realized P&L from closed sell trades
         total_realized_pnl = sum(t.get("net_pnl", 0.0) for t in self.trade_history if t["type"] == "SELL")

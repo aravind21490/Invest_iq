@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAllMarkets, getAllUnifiedStocks } from "@/lib/nse-catalog";
-import { fetchMultipleQuotes } from "@/lib/market-api";
+import { fetchMultipleQuotes, generateFallbackQuote } from "@/lib/market-api";
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
 
     // If requested, attach live real-time market quotes
-    const symbolsToQuote = searchResult.items.slice(0, 30).map((s) => s.quoteSymbol);
+    const symbolsToQuote = searchResult.items.map((s) => s.quoteSymbol);
     const quotes = await fetchMultipleQuotes(symbolsToQuote);
     const quoteMap = new Map(quotes.map((q) => [q.symbol.toUpperCase(), q]));
 
@@ -51,7 +51,16 @@ export async function GET(req: NextRequest) {
       return {
         ...stock,
         nseSymbol: stock.quoteSymbol, // backward compatibility
-        quote: live || null,
+        quote:
+          live ||
+          generateFallbackQuote(
+            stock.quoteSymbol,
+            stock.name,
+            stock.sector,
+            stock.category,
+            stock.market,
+            stock.currency
+          ),
       };
     });
 

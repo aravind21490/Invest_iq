@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-service";
 import { recordTrade } from "@/lib/db";
 import { fetchLiveQuote } from "@/lib/market-api";
-import { getNseStock } from "@/lib/nse-catalog";
+import { getNseStock, getUnifiedStock } from "@/lib/nse-catalog";
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { success: false, message: "Unauthenticated. Please sign in to trade." },
+        { success: false, message: "Permission denied. Authentication required to execute paper trades. Please sign in or create an account." },
         { status: 401 }
       );
     }
+    const userId = user.id;
 
     const body = await req.json();
     const { symbol, type, shares } = body;
@@ -43,11 +44,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const nseInfo = getNseStock(symbol);
-    const name = quote.name || nseInfo?.name || symbol;
-    const sector = nseInfo?.sector || "General";
+    const stockInfo = getUnifiedStock(symbol) || getNseStock(symbol);
+    const name = quote.name || stockInfo?.name || symbol;
+    const sector = stockInfo?.sector || "General";
 
-    const result = recordTrade(user.id, {
+    const result = await recordTrade(userId, {
       symbol: symbol.toUpperCase(),
       name,
       type,

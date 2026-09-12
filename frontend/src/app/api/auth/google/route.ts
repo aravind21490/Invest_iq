@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const name = body.name || "Alex Vance";
     const avatar = body.avatar || "";
 
-    const result = handleGoogleOAuth(email, name, avatar);
+    const result = await handleGoogleOAuth(email, name, avatar);
 
     const response = NextResponse.json(
       {

@@ -294,6 +294,16 @@ function SignInForm({ initialMode = "signin" }: SignInFormProps) {
         </p>
       </div>
 
+      {/* Redirect / Mandatory Auth Notification */}
+      {searchParams.get("redirect") && !errorMessage && (
+        <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-start gap-2.5">
+          <Lock className="h-4 w-4 shrink-0 mt-0.5" />
+          <span className="leading-snug">
+            <strong>Authentication Required:</strong> Access to the trading portal is restricted. Please sign in or create a new account to proceed.
+          </span>
+        </div>
+      )}
+
       {/* Error Alert */}
       {errorMessage && (
         <div className="p-3.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-start gap-2.5">

@@ -70,6 +70,14 @@
       "name": "Trader 7205",
       "authProvider": "phone",
       "createdAt": "2026-09-10T13:01:21.017Z"
+    },
+    {
+      "id": "usr_32on951h",
+      "email": "test@example.com",
+      "name": "Test User",
+      "authProvider": "google",
+      "avatar": "",
+      "createdAt": "2026-09-11T06:37:14.450Z"
     }
   ],
   "sessions": [
@@ -114,14 +122,20 @@
       "userId": "usr_kbuu88s2",
       "createdAt": "2026-09-10T13:28:23.525Z",
       "expiresAt": "2026-10-10T13:28:23.525Z"
+    },
+    {
+      "token": "iqs_jb197pfec1k_1789108634459_uogc9lwz",
+      "userId": "usr_32on951h",
+      "createdAt": "2026-09-11T06:37:14.459Z",
+      "expiresAt": "2026-10-11T06:37:14.459Z"
     }
   ],
   "portfolios": [
     {
       "userId": "usr_demo",
-      "cashBalance": 325400,
-      "initialBalance": 500000,
-      "updatedAt": "2026-09-10T06:13:02.183Z"
+      "cashBalance": 87425,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-11T10:56:29.666Z"
     },
     {
       "userId": "usr_haw08l74",
@@ -182,39 +196,15 @@
       "cashBalance": 151000,
       "initialBalance": 151000,
       "updatedAt": "2026-09-10T13:21:29.996Z"
+    },
+    {
+      "userId": "usr_32on951h",
+      "cashBalance": 100000,
+      "initialBalance": 100000,
+      "updatedAt": "2026-09-11T06:37:14.450Z"
     }
   ],
   "positions": [
-    {
-      "id": "pos_demo_1",
-      "userId": "usr_demo",
-      "symbol": "RELIANCE.NS",
-      "name": "Reliance Industries Limited",
-      "shares": 50,
-      "avgBuyPrice": 1250,
-      "sector": "Energy & Conglomerate",
-      "updatedAt": "2026-09-10T06:13:02.183Z"
-    },
-    {
-      "id": "pos_demo_2",
-      "userId": "usr_demo",
-      "symbol": "TCS.NS",
-      "name": "Tata Consultancy Services",
-      "shares": 30,
-      "avgBuyPrice": 2160,
-      "sector": "Information Technology",
-      "updatedAt": "2026-09-10T06:13:02.183Z"
-    },
-    {
-      "id": "pos_demo_3",
-      "userId": "usr_demo",
-      "symbol": "TMPV.NS",
-      "name": "Tata Motors Pass. Vehicles",
-      "shares": 50,
-      "avgBuyPrice": 950,
-      "sector": "Automobile & EV",
-      "updatedAt": "2026-09-10T06:13:02.183Z"
-    },
     {
       "id": "pos_jtm66i3m",
       "userId": "usr_haw08l74",
@@ -284,48 +274,19 @@
       "avgBuyPrice": 1274,
       "sector": "Energy & Conglomerate",
       "updatedAt": "2026-09-10T14:09:19.738Z"
+    },
+    {
+      "id": "pos_0xttyhwj",
+      "userId": "usr_demo",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "shares": 10,
+      "avgBuyPrice": 1257.5,
+      "sector": "Energy & Conglomerate",
+      "updatedAt": "2026-09-11T10:56:29.666Z"
     }
   ],
   "trades": [
-    {
-      "id": "ORD-94281",
-      "userId": "usr_demo",
-      "symbol": "RELIANCE.NS",
-      "name": "Reliance Industries Limited",
-      "type": "BUY",
-      "shares": 50,
-      "price": 1250,
-      "amount": 62500,
-      "pnl": 0,
-      "status": "Filled",
-      "timestamp": "2026-09-10T02:13:02.183Z"
-    },
-    {
-      "id": "ORD-87192",
-      "userId": "usr_demo",
-      "symbol": "TCS.NS",
-      "name": "Tata Consultancy Services",
-      "type": "BUY",
-      "shares": 30,
-      "price": 2160,
-      "amount": 64800,
-      "pnl": 0,
-      "status": "Filled",
-      "timestamp": "2026-09-09T06:13:02.183Z"
-    },
-    {
-      "id": "ORD-73194",
-      "userId": "usr_demo",
-      "symbol": "TMPV.NS",
-      "name": "Tata Motors Pass. Vehicles",
-      "type": "BUY",
-      "shares": 50,
-      "price": 950,
-      "amount": 47500,
-      "pnl": 0,
-      "status": "Filled",
-      "timestamp": "2026-09-08T04:15:00.000Z"
-    },
     {
       "id": "ORD-35723",
       "userId": "usr_haw08l74",
@@ -455,6 +416,32 @@
       "pnl": 0,
       "status": "Filled",
       "timestamp": "2026-09-10T14:09:19.738Z"
+    },
+    {
+      "id": "ORD-65166",
+      "userId": "usr_demo",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 5,
+      "price": 1257.5,
+      "amount": 6287.5,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-11T10:51:51.262Z"
+    },
+    {
+      "id": "ORD-77601",
+      "userId": "usr_demo",
+      "symbol": "RELIANCE.NS",
+      "name": "RELIANCE INDUSTRIES LTD",
+      "type": "BUY",
+      "shares": 5,
+      "price": 1257.5,
+      "amount": 6287.5,
+      "pnl": 0,
+      "status": "Filled",
+      "timestamp": "2026-09-11T10:56:29.666Z"
     }
   ],
   "learnProgress": [
@@ -552,6 +539,13 @@
       "quizScores": {},
       "streakDays": 1,
       "lastActiveDate": "2026-09-10"
+    },
+    {
+      "userId": "usr_32on951h",
+      "completedTopics": [],
+      "quizScores": {},
+      "streakDays": 1,
+      "lastActiveDate": "2026-09-11"
     }
   ]
 }

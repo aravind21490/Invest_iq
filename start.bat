@@ -13,7 +13,7 @@ chcp 65001 >nul 2>&1
 REM Activate Python Virtual Environment
 call .\venv\Scripts\activate.bat
 
-REM Run Flask App (which will auto-launch your browser to http://127.0.0.1:5000)
+REM Run Flask App (which will auto-launch your browser to http://localhost:3000)
 python app.py
 
 pause

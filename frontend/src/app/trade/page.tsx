@@ -213,8 +213,13 @@ function TradeTerminalContent() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-black text-foreground">{cleanDisplaySymbol}</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold">
-                NSE:EQ
+              <span className={cn(
+                "text-[10px] px-2 py-0.5 rounded font-mono font-bold",
+                isGlobalStock
+                  ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+              )}>
+                {isGlobalStock ? "GLOBAL:US" : "NSE:EQ"}
               </span>
               <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground truncate max-w-[150px]">
                 {liveQuote.sector}

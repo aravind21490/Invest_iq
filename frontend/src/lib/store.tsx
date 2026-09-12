@@ -133,6 +133,10 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
   const refreshPortfolio = useCallback(async () => {
     try {
       const res = await fetch("/api/user/portfolio");
+      if (res.status === 401) {
+        setUser(null);
+        return;
+      }
       if (res.ok) {
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) return;

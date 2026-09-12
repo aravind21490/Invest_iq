@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export function middleware(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
   const sessionCookie = request.cookies.get("investiq_session")?.value;
 
+  // 1. Normalize aliases /sign-in and /sign-up
   if (pathname === "/sign-in") {
     return NextResponse.redirect(new URL("/signin", request.url));
   }
@@ -12,48 +13,72 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/signup", request.url));
   }
 
-  const isAuthPage = pathname.startsWith("/signin") || pathname.startsWith("/signup");
-  const isPublicApi = pathname.startsWith("/api/auth") || pathname.startsWith("/api/market");
+  // 2. Allow public static assets and system files
   const isPublicAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/public");
+    pathname.startsWith("/public") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".webp") ||
+    pathname.endsWith(".ico");
 
   if (isPublicAsset) {
     return NextResponse.next();
   }
 
-  // If unauthenticated and trying to access an app page or protected API
-  if (!sessionCookie) {
-    if (isAuthPage || isPublicApi) {
-      return NextResponse.next();
-    }
+  // 3. Allow public auth APIs
+  const isAuthApi = pathname.startsWith("/api/auth/");
+  if (isAuthApi) {
+    return NextResponse.next();
+  }
 
-    // For any API request, return 401 JSON instead of HTML redirect
-    if (pathname.startsWith("/api/")) {
+  // 4. Auth pages (/signin, /signup)
+  const isAuthPage = pathname === "/signin" || pathname === "/signup";
+
+  // If already authenticated and trying to access signin/signup, redirect to dashboard or redirect parameter
+  if (sessionCookie && isAuthPage) {
+    const redirectParam = request.nextUrl.searchParams.get("redirect");
+    const destination = redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
+    return NextResponse.redirect(new URL(destination, request.url));
+  }
+
+  // If visiting an auth page without a session, permit access
+  if (isAuthPage) {
+    return NextResponse.next();
+  }
+
+  // 5. Protected API routes: return 401 JSON if not authenticated
+  if (pathname.startsWith("/api/")) {
+    if (!sessionCookie) {
       return NextResponse.json(
-        { success: false, message: "Unauthenticated", authenticated: false },
+        {
+          success: false,
+          error: "Permission denied. Authentication is mandatory to access the Invest IQ Portal.",
+        },
         { status: 401 }
       );
     }
-
-    // Redirect unauthenticated page requests directly to sign in
-    const signInUrl = new URL("/signin", request.url);
-    if (pathname !== "/") {
-      signInUrl.searchParams.set("redirect", pathname);
-    }
-    return NextResponse.redirect(signInUrl);
+    return NextResponse.next();
   }
 
-  // If already authenticated and visiting signin or signup, redirect to dashboard
-  if (sessionCookie && isAuthPage) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // 6. ALL OTHER PORTAL ROUTES: Mandatory authentication gate
+  // If not authenticated, deny permission and redirect to /signin with redirect parameter
+  if (!sessionCookie) {
+    const redirectUrl = new URL("/signin", request.url);
+    const destination = pathname + (search || "");
+    if (destination && destination !== "/") {
+      redirectUrl.searchParams.set("redirect", destination);
+    }
+    return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.next();
 }
 
-export const middleware = proxy;
+export const proxy = middleware;
 
 export const config = {
   matcher: [

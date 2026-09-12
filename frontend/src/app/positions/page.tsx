@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Wallet,
   TrendingUp,
+  TrendingDown,
   Briefcase,
   Clock,
   Plus,
@@ -25,7 +26,7 @@ const BORDER_COLORS = [
 ];
 
 export default function PositionsPage() {
-  const { positions, totalPortfolioValue, cash, currency } = useSimulator();
+  const { positions, totalPortfolioValue, currency } = useSimulator();
   const [selectedFilter, setSelectedFilter] = useState("All");
 
   // Fallback initial positions in real Indian equities if none active yet
@@ -105,7 +106,6 @@ export default function PositionsPage() {
   ];
 
   const totalPnL = displayPositions.reduce((sum, p) => sum + p.unrealizedPnL, 0);
-  const totalPnLPercent = (totalPnL / 100000) * 100;
 
   const filters = ["All", "Technology", "Banking", "Energy", "Automobile"];
 
@@ -138,12 +138,27 @@ export default function PositionsPage() {
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Total Change
             </span>
-            <div className="text-xl sm:text-2xl font-extrabold text-emerald-500 mt-1 tabular-nums">
-              +{formatCurrency(Math.max(totalPnL, 5060.20), currency)}
+            <div
+              className={cn(
+                "text-xl sm:text-2xl font-extrabold mt-1 tabular-nums",
+                totalPnL >= 0 ? "text-emerald-500" : "text-rose-500"
+              )}
+            >
+              {totalPnL >= 0 ? "+" : "-"}
+              {formatCurrency(Math.abs(totalPnL), currency)}
             </div>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <TrendingUp className="h-5 w-5" />
+          <div
+            className={cn(
+              "h-10 w-10 rounded-xl flex items-center justify-center",
+              totalPnL >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+            )}
+          >
+            {totalPnL >= 0 ? (
+              <TrendingUp className="h-5 w-5" />
+            ) : (
+              <TrendingDown className="h-5 w-5" />
+            )}
           </div>
         </div>
 

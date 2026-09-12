@@ -8,12 +8,14 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json(
-      { success: false, message: "Unauthenticated" },
+      { success: false, error: "Permission denied. Please sign in or create an account to access portfolio data." },
       { status: 401 }
     );
   }
+  const userId = user.id;
+  const userObj = user;
 
-  const { portfolio, positions, trades, learn } = getUserPortfolio(user.id);
+  const { portfolio, positions, trades, learn } = await getUserPortfolio(userId);
 
   // Fetch live prices for all positions to calculate accurate real equity and P&L
   let positionsTotalValue = 0;
@@ -65,11 +67,11 @@ export async function GET() {
     {
       success: true,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        authProvider: user.authProvider,
+        id: userObj.id,
+        name: userObj.name,
+        email: userObj.email,
+        phone: userObj.phone,
+        authProvider: userObj.authProvider,
       },
       portfolio: {
         cashBalance: Number(portfolio.cashBalance.toFixed(2)),

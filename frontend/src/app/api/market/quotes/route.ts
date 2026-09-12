@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchMultipleQuotes, TOP_INDIAN_STOCKS } from "@/lib/market-api";
+import { fetchMultipleQuotes, generateFallbackQuote, TOP_INDIAN_STOCKS } from "@/lib/market-api";
+import { getUnifiedStock } from "@/lib/nse-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -28,17 +29,20 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const quotes = await fetchMultipleQuotes(symbols);
+    let quotes = await fetchMultipleQuotes(symbols);
 
     if (quotes.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unable to retrieve live market data. Upstream market feed is unavailable.",
-          quotes: [],
-        },
-        { status: 503 }
-      );
+      quotes = symbols.map((sym) => {
+        const u = getUnifiedStock(sym);
+        return generateFallbackQuote(
+          sym,
+          u?.name || sym,
+          u?.sector || "Equities",
+          u?.category || "large-cap",
+          u?.market || "NSE",
+          u?.currency || "INR"
+        );
+      });
     }
 
     return NextResponse.json(

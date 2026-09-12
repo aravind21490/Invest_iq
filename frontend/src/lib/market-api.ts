@@ -100,6 +100,9 @@ export async function fetchLiveQuote(rawSymbol: string): Promise<MarketQuote | n
     (symbol.startsWith("^") ? "index" : isGlobal ? "tech" : "large-cap")) as MarketQuote["category"];
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
       symbol
     )}?interval=1d&range=5d`;
@@ -110,8 +113,9 @@ export async function fetchLiveQuote(rawSymbol: string): Promise<MarketQuote | n
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
       },
+      signal: controller.signal,
       next: { revalidate: 2 },
-    });
+    }).finally(() => clearTimeout(timeoutId));
 
     if (!res.ok) {
       if (cached) return cached.data;
@@ -238,7 +242,7 @@ const REAL_BASE_PRICES: Record<string, number> = {
   "^GDAXI": 18450.0,
 };
 
-function generateFallbackQuote(
+export function generateFallbackQuote(
   symbol: string,
   name: string,
   sector: string,
@@ -300,6 +304,9 @@ export async function fetchHistoricalChart(
   const interval = intervalMap[range] || "1d";
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
       symbol
     )}?interval=${interval}&range=${range}`;
@@ -310,7 +317,8 @@ export async function fetchHistoricalChart(
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Accept: "application/json",
       },
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
 
     if (!res.ok) {
       return generateFallbackChart(symbol, range);

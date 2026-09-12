@@ -7,10 +7,11 @@ export async function POST(req: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { success: false, message: "Unauthenticated" },
+        { success: false, message: "Permission denied. Sign in required." },
         { status: 401 }
       );
     }
+    const userId = user.id;
 
     const body = await req.json();
     const { topicId, score } = body;
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const progress = updateLearnProgress(user.id, topicId, score);
+    const progress = await updateLearnProgress(userId, topicId, score);
 
     return NextResponse.json(
       {

@@ -67,6 +67,12 @@ class KiteBroker:
         qty = int(quantity)
         px = float(price)
 
+        if px <= 0:
+            from data_provider import default_data_provider
+            quote = default_data_provider.get_latest_quote(f"{clean_symbol}.NS")
+            if quote and quote.get("price", 0.0) > 0:
+                px = float(quote["price"])
+
         if qty <= 0 or px <= 0:
             raise KiteBrokerException("Quantity and price must be positive numbers.")
 
@@ -121,7 +127,27 @@ class KiteBroker:
                 "No autonomous algorithmic execution is permitted."
             )
 
-        # 2. Schema validation
+        # 2. Support parameter aliases
+        if "tradingsymbol" not in order_payload and "symbol" in order_payload:
+            order_payload["tradingsymbol"] = str(order_payload["symbol"]).replace(".NS", "").upper()
+        if "transaction_type" not in order_payload and "action" in order_payload:
+            order_payload["transaction_type"] = str(order_payload["action"]).upper()
+
+        # 3. Resolve live price if not specified or <= 0
+        try:
+            curr_px = float(order_payload.get("price", 0.0) or 0.0)
+        except (ValueError, TypeError):
+            curr_px = 0.0
+
+        if curr_px <= 0 and order_payload.get("tradingsymbol"):
+            from data_provider import default_data_provider
+            raw_sym = str(order_payload["tradingsymbol"]).replace(".NS", "")
+            quote = default_data_provider.get_latest_quote(f"{raw_sym}.NS")
+            if quote and quote.get("price", 0.0) > 0:
+                curr_px = float(quote["price"])
+                order_payload["price"] = curr_px
+
+        # 4. Schema validation
         required_fields = ["tradingsymbol", "transaction_type", "quantity", "price"]
         for f in required_fields:
             if f not in order_payload or order_payload[f] is None:
@@ -187,19 +213,56 @@ class KiteBroker:
             simulated_order_id = f"{timestamp_prefix}{random_suffix}"
 
             trade_record = None
+            is_loss = False
+            is_locked = False
+            loss_streak = 0
+            lock_reason = ""
+
             if execute_in_portfolio:
-                from models import load_user_portfolio, sync_user_portfolio
-                portfolio = load_user_portfolio(self.user_id)
-                if trans_type == "BUY":
-                    res = portfolio.buy(symbol=full_symbol, quantity=qty, price=px)
+                is_pg = bool(os.environ.get("DATABASE_URL", "").startswith("postgres"))
+                if is_pg:
+                    from models import get_db_connection
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    clean_name = symbol
+                    cursor.execute(
+                        "SELECT execute_paper_trade(%s, %s, %s, %s, %s, %s, %s) AS result;",
+                        (str(self.user_id), full_symbol, clean_name, trans_type, qty, px, "General"),
+                    )
+                    res_row = cursor.fetchone()
+                    conn.commit()
+                    conn.close()
+
+                    if not res_row:
+                        raise KiteBrokerException("Trade execution RPC returned no response.")
+
+                    res = res_row["result"] if isinstance(res_row, dict) and "result" in res_row else res_row[0]
+                    if isinstance(res, str):
+                        res = json.loads(res)
+
+                    if not res.get("success"):
+                        raise KiteBrokerException(res.get("message", "Portfolio execution failed."))
+
+                    trade_record = res.get("trade")
+                    trade_pnl = float(trade_record.get("pnl", 0.0)) if trade_record else 0.0
+                    is_loss = (trans_type == "SELL" and trade_pnl < 0)
                 else:
-                    res = portfolio.sell(symbol=full_symbol, quantity=qty, price=px)
-                
-                if not res.get("success"):
-                    raise KiteBrokerException(res.get("error", "Portfolio execution failed."))
-                
-                trade_record = res.get("trade")
-                sync_user_portfolio(self.user_id, portfolio)
+                    from models import load_user_portfolio, sync_user_portfolio
+                    portfolio = load_user_portfolio(self.user_id)
+                    if trans_type == "BUY":
+                        res = portfolio.buy(symbol=full_symbol, quantity=qty, price=px)
+                    else:
+                        res = portfolio.sell(symbol=full_symbol, quantity=qty, price=px)
+                    
+                    if not res.get("success"):
+                        raise KiteBrokerException(res.get("error", "Portfolio execution failed."))
+                    
+                    trade_record = res.get("trade")
+                    is_loss = res.get("is_loss", False)
+                    is_locked = res.get("is_locked", False)
+                    loss_streak = res.get("loss_streak", 0)
+                    lock_reason = res.get("lock_reason", "")
+                    sync_user_portfolio(self.user_id, portfolio)
 
             return {
                 "status": "success",
@@ -221,13 +284,13 @@ class KiteBroker:
                     "human_confirmed": True,
                     "placed_at": datetime.now().isoformat(),
                     "trade_record": trade_record,
-                    "is_loss": res.get("is_loss", False) if execute_in_portfolio else False,
-                    "is_locked": res.get("is_locked", False) if execute_in_portfolio else False,
-                    "loss_streak": res.get("loss_streak", 0) if execute_in_portfolio else 0,
-                    "lock_reason": res.get("lock_reason", "") if execute_in_portfolio else "",
+                    "is_loss": is_loss,
+                    "is_locked": is_locked,
+                    "loss_streak": loss_streak,
+                    "lock_reason": lock_reason,
                 },
-                "is_locked": res.get("is_locked", False) if execute_in_portfolio else False,
-                "is_loss": res.get("is_loss", False) if execute_in_portfolio else False,
+                "is_locked": is_locked,
+                "is_loss": is_loss,
                 "message": (
                     f"Order #{simulated_order_id} placed successfully via Kite paper trading bridge. "
                     f"Executed {qty} shares of {symbol} at ₹{px:,.2f} ({prod})."

@@ -16,7 +16,7 @@ All signals package exact computed figures for the explainer engine.
 from typing import Dict, List, Any, Optional
 import pandas as pd
 from indicators import calculate_all_indicators, get_indicator_snapshot
-from data_provider import DataProvider, default_data_provider, CORE_NSE_STOCKS
+from data_provider import DataProvider, default_data_provider, CORE_NSE_STOCKS, resolve_stock_info
 
 
 SIGNAL_METADATA: Dict[str, Dict[str, str]] = {
@@ -208,7 +208,7 @@ class MarketScanner:
             s["category"] = meta_sig.get("category", "Market Equilibrium")
             s["core_concept"] = meta_sig.get("core_concept", "")
 
-        meta = CORE_NSE_STOCKS.get(symbol, {"name": symbol, "sector": "General", "cap": "NSE Equity"})
+        meta = resolve_stock_info(symbol)
         prev_close = float(enriched["Close"].iloc[-2]) if len(enriched) >= 2 else close
         price_change_pct = round(((close - prev_close) / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
         data_source = df.attrs.get("source", "cached" if not df.empty else "live")

@@ -40,10 +40,17 @@ export function PortfolioFlow() {
           Money Movement
         </h3>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-border bg-card text-xs font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors">
+        <button
+          type="button"
+          onClick={() => {
+            const next = timeframe === "7d" ? "30d" : timeframe === "30d" ? "YTD" : "7d";
+            setTimeframe(next);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-border bg-card text-xs font-semibold text-foreground cursor-pointer hover:bg-muted transition-colors"
+        >
           <span>{timeframe}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
-        </div>
+        </button>
       </div>
 
       {/* Two colored stat blocks side-by-side matching screenshot */}

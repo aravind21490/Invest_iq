@@ -71,6 +71,26 @@ from auth import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("InvestIQ.App")
 
+# Automatically load .env file if present
+def _load_env_file():
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k and k not in os.environ:
+                        os.environ[k] = v
+        except Exception as e:
+            logger.debug("Could not parse .env file: %s", e)
+
+_load_env_file()
+
 app = Flask(__name__)
 _secret = os.environ.get("SECRET_KEY")
 if not _secret:
@@ -79,11 +99,19 @@ if not _secret:
     _secret = "investiq-production-secret-9821389"
 app.secret_key = _secret
 
+
+@app.after_request
+def enforce_utf8_charset(response):
+    """Ensure all HTML responses explicitly declare UTF-8 charset for Rupee and em-dash symbols."""
+    if response.mimetype == "text/html" and "charset" not in response.headers.get("Content-Type", ""):
+        response.headers["Content-Type"] = "text/html; charset=utf-8"
+    return response
+
 # Global Scanner instance
 scanner = MarketScanner(data_provider=default_data_provider)
 
 # In-memory caches for instantaneous sub-second response times
-_screener_cache: Dict[str, Any] = {"timestamp": 0, "regime": None, "data": []}
+_screener_cache: Dict[str, Any] = {}
 _dashboard_cache: Dict[str, Any] = {"timestamp": 0, "regime": None, "data": []}
 
 NEXTJS_ORIGIN = os.environ.get("NEXTJS_ORIGIN", "http://localhost:3000")
@@ -179,9 +207,27 @@ def nextjs_gateway_route(subpath=""):
         full_path = request.full_path.lstrip("/")
         if full_path.endswith("?"):
             full_path = full_path[:-1]
+        if full_path.startswith("_next/hmr"):
+            return Response(status=204)
         proxied = proxy_to_nextjs(full_path)
         if proxied:
             return proxied
+
+    # Graceful fallback to working Flask routes when Next.js frontend is offline
+    path = request.path
+    if path == "/signin":
+        return redirect(url_for("login_route"))
+    if path == "/signup":
+        return redirect(url_for("register_route"))
+    if path == "/settings":
+        return redirect(url_for("broker_settings_route"))
+    if path == "/positions":
+        return redirect(url_for("portfolio_route"))
+    if path in ["/markets", "/trade", "/watchlist"]:
+        return redirect(url_for("screener_route"))
+    if path in ["/analytics", "/orders", "/leaderboard", "/accounts"]:
+        return redirect(url_for("report_route"))
+
     return jsonify({"error": "Next.js frontend not responding on port 3000"}), 502
 
 
@@ -282,13 +328,31 @@ def screener_route():
         page = max(1, int(request.args.get("page", 1)))
     except (ValueError, TypeError):
         page = 1
-    per_page = 25
+    per_page = 20
 
     custom_symbol = request.args.get("custom_symbol", "").strip()
     if custom_symbol:
         sym_clean = sanitize_ticker(custom_symbol)
         resolve_stock_info(sym_clean)
         return redirect(url_for("stock_detail_route", symbol=sym_clean, regime=regime))
+
+    # Fast cache check (< 1ms response if fresh)
+    now = time.time()
+    cache_key = f"{regime}:{signal_filter}:{sector_filter}:{search_q}:{page}"
+    if cache_key in _screener_cache:
+        cached_entry = _screener_cache[cache_key]
+        if (now - cached_entry["timestamp"]) < 60:
+            return render_template(
+                "screener.html",
+                active_page="screener",
+                active_regime=regime,
+                current_filter=signal_filter,
+                current_sector=sector_filter,
+                search_query=search_q,
+                results=cached_entry["results"],
+                pagination=cached_entry["pagination"],
+                available_sectors=default_nse_catalog.get_sectors(),
+            )
 
     # Fast paginated query across all 2,200+ listed NSE stocks
     catalog_res = default_nse_catalog.search_stocks(
@@ -331,7 +395,9 @@ def screener_route():
             continue
 
         explanation = explain_stock_signal(analysis)
-        stats_map = default_stats_engine.compute_signal_history_stats(sym, forward_days=10)
+        # Reuse pre-fetched dataframe from memory cache if available to eliminate duplicate queries
+        cached_df = default_data_provider._memory_cache.get((sym, regime))
+        stats_map = default_stats_engine.compute_signal_history_stats(sym, df=cached_df, forward_days=10)
         stats = stats_map.get(sig_type)
 
         results.append({
@@ -348,6 +414,13 @@ def screener_route():
             "source": analysis.get("source", "live"),
             "data_source": analysis.get("data_source", "live"),
         })
+
+    # Cache screener output
+    _screener_cache[cache_key] = {
+        "timestamp": now,
+        "results": results,
+        "pagination": catalog_res,
+    }
 
     return render_template(
         "screener.html",
@@ -443,7 +516,7 @@ def learn_route(subpath=""):
     if not app.config.get("TESTING") and not request.args.get("classic"):
         target = f"learn/{subpath}" if subpath else "learn"
         proxied = proxy_to_nextjs(target)
-        if proxied:
+        if proxied and proxied.status_code == 200:
             return proxied
     return render_template("learn.html", active_page="learn")
 
@@ -573,9 +646,16 @@ def api_trade_route():
         return jsonify({"success": False, "error": "Invalid quantity specified."}), 400
 
     try:
-        price = float(data.get("price", 0.0))
+        price = float(data.get("price", 0.0) or 0.0)
     except (ValueError, TypeError):
-        return jsonify({"success": False, "error": "Invalid price specified."}), 400
+        price = 0.0
+
+    if price <= 0.0 and symbol:
+        quote = default_data_provider.get_latest_quote(symbol)
+        if quote and quote.get("price", 0.0) > 0:
+            price = float(quote["price"])
+        else:
+            return jsonify({"success": False, "error": f"Unable to retrieve live market quote for {symbol}."}), 400
 
     portfolio = load_user_portfolio(user["id"])
 
@@ -694,14 +774,20 @@ def api_broker_preview_route():
         return jsonify({"success": False, "error": "Authentication required."}), 401
 
     data = request.get_json() or {}
-    symbol = sanitize_ticker(data.get("symbol", ""))
-    action = data.get("action", "BUY").upper()
-    product = data.get("product", "CNC").upper()
+    raw_sym = data.get("tradingsymbol") or data.get("symbol", "")
+    symbol = sanitize_ticker(raw_sym)
+    action = (data.get("transaction_type") or data.get("action", "BUY")).upper()
+    product = (data.get("product", "CNC")).upper()
     try:
         qty = int(data.get("quantity", 1))
-        px = float(data.get("price", 0.0))
+        px = float(data.get("price", 0.0) or 0.0)
     except (ValueError, TypeError):
         return jsonify({"success": False, "error": "Invalid quantity or price specified."}), 400
+
+    if px <= 0.0 and symbol:
+        quote = default_data_provider.get_latest_quote(symbol)
+        if quote and quote.get("price", 0.0) > 0:
+            px = float(quote["price"])
 
     broker = get_broker_for_user(user["id"])
     try:
@@ -727,6 +813,18 @@ def api_broker_order_route():
         return jsonify({"success": False, "error": "Authentication required."}), 401
 
     data = request.get_json() or {}
+    # Support aliases
+    if "tradingsymbol" not in data and "symbol" in data:
+        data["tradingsymbol"] = data["symbol"]
+    if "transaction_type" not in data and "action" in data:
+        data["transaction_type"] = data["action"]
+    if not data.get("price") or float(data.get("price", 0.0)) <= 0:
+        sym = sanitize_ticker(data.get("tradingsymbol", ""))
+        if sym:
+            quote = default_data_provider.get_latest_quote(sym)
+            if quote and quote.get("price", 0.0) > 0:
+                data["price"] = float(quote["price"])
+
     broker = get_broker_for_user(user["id"])
     try:
         result = broker.place_order(data, execute_in_portfolio=True)
@@ -786,34 +884,52 @@ if __name__ == "__main__":
     import threading
     import webbrowser
     import subprocess
+    import socket
+    import flask.cli
+
+    # Suppress Werkzeug's default port 5000 banner so terminal stays clean
+    flask.cli.show_server_banner = lambda *args, **kwargs: None
 
     port = int(os.environ.get("PORT", 5000))
-    url = f"http://127.0.0.1:{port}"
+    frontend_url = "http://localhost:3000"
+
+    def is_port_in_use(p):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.5)
+                return s.connect_ex(("127.0.0.1", p)) == 0
+        except Exception:
+            return False
 
     def ensure_nextjs_frontend():
-        try:
-            r = requests.get("http://localhost:3000/api/market/quotes", timeout=1.5)
-            if r.status_code in [200, 401, 503]:
-                return
-        except Exception:
-            pass
+        if is_port_in_use(3000):
+            return
         frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
         if os.path.exists(frontend_dir):
             try:
-                subprocess.Popen(["npm", "run", "dev"], cwd=frontend_dir, shell=True)
+                npm_cmd = "npm.cmd" if sys.platform.startswith("win") else "npm"
+                nextjs_env = os.environ.copy()
+                nextjs_env["PORT"] = "3000"
+                subprocess.Popen([npm_cmd, "run", "dev"], cwd=frontend_dir, env=nextjs_env, shell=True)
             except Exception as e:
                 logger.warning("Could not auto-start Next.js frontend: %s", e)
 
-    # Automatically launch browser once the server starts
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    elif not os.environ.get("WERKZEUG_RUN_MAIN"):
-        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    def open_browser_when_ready(target_url):
+        # Poll up to 10 seconds for Next.js on port 3000 before opening browser
+        for _ in range(20):
+            if is_port_in_use(3000):
+                break
+            time.sleep(0.5)
+        webbrowser.open(target_url)
+
+    # Automatically ensure frontend & launch browser once the server starts
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
         threading.Thread(target=ensure_nextjs_frontend, daemon=True).start()
+        threading.Thread(target=open_browser_when_ready, args=(frontend_url,), daemon=True).start()
 
     print(f"\n" + "=" * 65)
     print(f"🚀 INVEST IQ UNIFIED PLATFORM IS LIVE!")
-    print(f"👉 Opening your web browser automatically at: {url}")
+    print(f"👉 Opening your web browser automatically at: {frontend_url}")
     print(f"   (Unified Next.js Fintech Hub + 2,298+ NSE Live Equities in ₹)")
     print(f"   Press CTRL+C to quit anytime.")
     print(f"=" * 65 + "\n")

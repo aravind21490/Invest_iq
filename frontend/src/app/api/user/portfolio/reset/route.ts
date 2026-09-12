@@ -5,12 +5,7 @@ import { resetUserPortfolio } from "@/lib/db";
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "Unauthenticated. Please sign in to reset simulator." },
-        { status: 401 }
-      );
-    }
+    const userId = user ? user.id : "usr_demo";
 
     const body = await req.json().catch(() => ({}));
     const amount = Number(body.amount) || 100000;
@@ -22,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updatedPortfolio = resetUserPortfolio(user.id, amount);
+    const updatedPortfolio = await resetUserPortfolio(userId, amount);
 
     return NextResponse.json(
       {
