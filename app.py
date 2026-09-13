@@ -315,17 +315,48 @@ scanner = MarketScanner(data_provider=default_data_provider)
 _screener_cache: Dict[str, Any] = {}
 _dashboard_cache: Dict[str, Any] = {"timestamp": 0, "regime": None, "data": []}
 
-NEXTJS_ORIGIN = os.environ.get("NEXTJS_ORIGIN", "http://localhost:3000")
+def _get_nextjs_origin() -> str:
+    """
+    Resolve the frontend URL dynamically:
+    1. NEXTJS_ORIGIN environment variable
+    2. FRONTEND_URL environment variable (configured on Render)
+    3. First URL in CORS_ALLOWED_ORIGINS
+    4. http://localhost:3000 only in local development (never in production)
+    """
+    explicit = os.environ.get("NEXTJS_ORIGIN") or os.environ.get("FRONTEND_URL")
+    if explicit:
+        return explicit.strip().rstrip("/")
+    cors = os.environ.get("CORS_ALLOWED_ORIGINS")
+    if cors:
+        first_cors = cors.split(",")[0].strip().rstrip("/")
+        if first_cors:
+            return first_cors
+    if os.environ.get("FLASK_ENV") == "production" or os.environ.get("RENDER"):
+        return ""
+    return "http://localhost:3000"
+
+NEXTJS_ORIGIN = _get_nextjs_origin()
 
 
 def proxy_to_nextjs(path=""):
     """
     Transparent reverse proxy forwarding requests to the Next.js React frontend.
-    Allows the user to access the full Next.js UI directly at http://127.0.0.1:5000/.
+    Allows accessing the full Next.js UI directly through the gateway.
+    In cloud production (e.g. on Render), skips proxying if no external frontend
+    URL is configured or if origin resolves to localhost.
     """
-    url = f"{NEXTJS_ORIGIN}/{path}".rstrip("/") if path else NEXTJS_ORIGIN
+    origin = _get_nextjs_origin()
+    if not origin:
+        return None
+
+    # In production environments (e.g. Render), never attempt connecting to localhost
+    is_prod = os.environ.get("FLASK_ENV") == "production" or bool(os.environ.get("RENDER"))
+    if is_prod and ("localhost" in origin or "127.0.0.1" in origin):
+        return None
+
+    url = f"{origin}/{path}".rstrip("/") if path else origin
     if path.startswith("?"):
-        url = f"{NEXTJS_ORIGIN}/{path}"
+        url = f"{origin}/{path}"
 
     headers = {k: v for k, v in request.headers if k.lower() not in ["host", "content-length"]}
     headers["X-Forwarded-Host"] = request.host

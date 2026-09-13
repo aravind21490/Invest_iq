@@ -19,7 +19,19 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import pandas as pd
+import requests
 import yfinance as yf
+
+# Configure custom requests session with modern browser User-Agent to mitigate Yahoo 401 Invalid Crumb
+_yf_session = requests.Session()
+_yf_session.headers.update({
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+})
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -232,7 +244,7 @@ def resolve_stock_info(symbol: str) -> Dict[str, str]:
     # Fast Dynamic Lookup from yfinance for any other listed NSE ticker
     try:
         query_sym = alias or sym
-        ticker = yf.Ticker(query_sym)
+        ticker = yf.Ticker(query_sym, session=_yf_session)
         info = ticker.info or {}
         name = info.get("longName") or info.get("shortName") or sym.replace(".NS", "")
         sector = info.get("sector") or info.get("industry") or "Indian Equity"
@@ -369,7 +381,7 @@ class DataProvider:
         # 4. Fast network attempt if not cached
         for attempt in range(1, retries + 1):
             try:
-                ticker = yf.Ticker(query_sym)
+                ticker = yf.Ticker(query_sym, session=_yf_session)
                 if regime_config["start"] and regime_config["end"]:
                     df = ticker.history(
                         start=regime_config["start"],

@@ -33,7 +33,7 @@ def make_request(
     method: str = "GET",
     data: Dict[str, Any] = None,
     cookie: str = "",
-    timeout: int = 30,
+    timeout: int = 90,
 ) -> Tuple[int, Dict[str, Any]]:
     """Execute HTTP request with session cookie and return status code and JSON payload."""
     headers = {
