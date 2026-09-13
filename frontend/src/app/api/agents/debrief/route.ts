@@ -41,8 +41,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Server-Only Shared Secret for Flask Bridge
-    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const agentSecret =
+      process.env.AGENT_SERVICE_SECRET?.trim().replace(/^["']|["']$/g, "");
     if (!agentSecret) {
+
       console.error("CRITICAL: AGENT_SERVICE_SECRET is missing from server environment.");
       return NextResponse.json(
         {

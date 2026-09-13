@@ -49,7 +49,9 @@ export async function POST(req: NextRequest) {
     const sector = stockInfo?.sector || "General";
 
     // Synchronous Watchdog Pre-Trade Behavioral Guardrail Check
-    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const agentSecret =
+      process.env.AGENT_SERVICE_SECRET?.trim().replace(/^["']|["']$/g, "");
+
     const flaskOrigin =
       process.env.FLASK_API_URL ||
       process.env.FLASK_ORIGIN ||

@@ -22,9 +22,11 @@ export async function GET(req: NextRequest) {
     const testInvalid = searchParams.get("test_invalid") === "true";
 
     // Server-only environment variable
-    const agentSecret = testInvalid
+    const rawSecret = testInvalid
       ? "invalid_secret_key_for_testing_401"
       : process.env.AGENT_SERVICE_SECRET;
+    const agentSecret = rawSecret?.trim().replace(/^["']|["']$/g, "");
+
 
     const flaskBaseUrl =
       process.env.FLASK_API_URL ||
@@ -54,12 +56,17 @@ export async function GET(req: NextRequest) {
       {
         bridgeStatus: res.status,
         flaskUrl: targetUrl,
-        sentSecret: testInvalid ? "[INVALID_SECRET_TEST]" : "[REDACTED_VALID_SECRET]",
-        hasSecretConfigured: Boolean(process.env.AGENT_SERVICE_SECRET),
+        secretInfo: {
+          hasSecret: Boolean(process.env.AGENT_SERVICE_SECRET),
+          length: process.env.AGENT_SERVICE_SECRET?.length || 0,
+          prefix: process.env.AGENT_SERVICE_SECRET?.slice(0, 4) || "",
+          suffix: process.env.AGENT_SERVICE_SECRET?.slice(-4) || "",
+        },
         flaskResponse: data,
       },
       { status: res.status }
     );
+
   } catch (error: any) {
     return NextResponse.json(
       {

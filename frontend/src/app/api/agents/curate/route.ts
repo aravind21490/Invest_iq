@@ -18,7 +18,8 @@ import { getCurrentUser } from "@/lib/auth-service";
  */
 export async function POST(req: NextRequest) {
   try {
-    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const agentSecret =
+      process.env.AGENT_SERVICE_SECRET?.trim().replace(/^["']|["']$/g, "") || "";
     const incomingKey = req.headers.get("x-agent-service-key");
     const isMachineAuth = Boolean(agentSecret && incomingKey && incomingKey === agentSecret);
 
@@ -113,7 +114,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Call Flask with service secret to query today's curator suggestions for this user
-    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const agentSecret =
+      process.env.AGENT_SERVICE_SECRET?.trim().replace(/^["']|["']$/g, "") || "";
     const flaskBaseUrl =
       process.env.FLASK_API_URL ||
       process.env.FLASK_ORIGIN ||

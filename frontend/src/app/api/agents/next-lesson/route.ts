@@ -27,7 +27,8 @@ async function handleNextLesson() {
     const userId = user.id;
 
     // 3. Server-Only Shared Secret for Flask Bridge
-    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const agentSecret = process.env.AGENT_SERVICE_SECRET?.trim().replace(/^["']|["']$/g, "") || "";
+
     const flaskBaseUrl =
       process.env.FLASK_API_URL ||
       process.env.FLASK_ORIGIN ||
