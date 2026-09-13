@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Send, ChevronRight } from "lucide-react";
+import { Send, ChevronRight, ShieldAlert, Clock, Sparkles, ShieldCheck } from "lucide-react";
 import confetti from "canvas-confetti";
 import { TICKERS, TickerInfo } from "@/lib/mock-data";
 import { useSimulator } from "@/lib/store";
@@ -16,7 +16,15 @@ const RECENT_NSE_TICKERS = [
 ];
 
 export function QuickTrade() {
-  const { cash, currency, executePaperTrade } = useSimulator();
+  const {
+    cash,
+    currency,
+    executePaperTrade,
+    cooldownRemaining,
+    isLockedForReflection,
+    lockReason,
+    latestDebrief,
+  } = useSimulator();
   const [selectedSymbol, setSelectedSymbol] = useState<string>("RELIANCE.NS");
   const [shares, setShares] = useState<string>("5");
   const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
@@ -24,9 +32,9 @@ export function QuickTrade() {
 
   const fallbackTicker: TickerInfo = {
     symbol: selectedSymbol,
-    name: "Indian Equity",
-    price: 2987.5,
-    change: 24.5,
+    name: selectedSymbol.replace(".NS", ""),
+    price: 2500.0,
+    change: 20.5,
     changePercent: 0.82,
     sector: "NSE",
     marketCap: "₹20.2L Cr",
@@ -40,11 +48,23 @@ export function QuickTrade() {
   const estimatedCost = numShares * currentTicker.price;
   const canAfford = tradeType === "SELL" || cash >= estimatedCost;
 
+  const isBuyBlocked = tradeType === "BUY" && (cooldownRemaining > 0 || isLockedForReflection);
+
   const [watchdogWarning, setWatchdogWarning] = useState<string | null>(null);
 
   const handleTrade = async (e?: React.FormEvent, bypassWarning: boolean = false) => {
     if (e) e.preventDefault();
     if (numShares <= 0) return;
+
+    if (isBuyBlocked) {
+      setFeedback({
+        type: "error",
+        message: cooldownRemaining > 0
+          ? `Trading paused by Watchdog cooldown (${cooldownRemaining}s remaining). Switch to SELL to exit positions.`
+          : "Trading is locked for mandatory post-loss reflection.",
+      });
+      return;
+    }
 
     const result = await executePaperTrade({
       symbol: selectedSymbol,
@@ -67,10 +87,10 @@ export function QuickTrade() {
       } catch {
         // Confetti optional
       }
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 5000);
     } else {
       setFeedback({ type: "error", message: result.message });
-      setTimeout(() => setFeedback(null), 5000);
+      setTimeout(() => setFeedback(null), 6000);
     }
   };
 
@@ -120,30 +140,49 @@ export function QuickTrade() {
         </button>
       </div>
 
-      {/* Sublabel matching 'Sending to Sarah Chen' */}
-      <div className="text-xs text-muted-foreground">
-        Trading <span className="font-semibold text-foreground">{currentTicker.name}</span>{" "}
-        <span className="font-mono text-zinc-400">({currentTicker.symbol})</span>
+      {/* Stock detail banner */}
+      <div className="p-3 rounded-lg border border-border/80 bg-muted/20 flex items-center justify-between">
+        <div>
+          <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
+            <span>{currentTicker.symbol}</span>
+            <span className="text-[10px] font-mono text-muted-foreground font-normal">
+              {currentTicker.name}
+            </span>
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">
+            {currentTicker.sector} • Vol {currentTicker.volume}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="font-mono font-bold text-sm text-foreground">
+            {formatCurrency(currentTicker.price, currency)}
+          </div>
+          <div
+            className={cn(
+              "text-[10px] font-mono font-semibold",
+              currentTicker.change >= 0 ? "text-emerald-500" : "text-rose-500"
+            )}
+          >
+            {currentTicker.change >= 0 ? "+" : ""}
+            {currentTicker.changePercent}%
+          </div>
+        </div>
       </div>
 
-      {/* Trading Form */}
-      <form onSubmit={handleTrade} className="space-y-3">
-        {/* Quantity / Amount Input */}
-        <div className="space-y-1">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-            Quantity (Shares)
+      {/* Form Inputs */}
+      <form onSubmit={(e) => handleTrade(e, false)} className="space-y-3">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
+            Shares Quantity
           </label>
           <div className="relative flex items-center">
-            <span className="absolute left-3 text-muted-foreground font-semibold text-xs">
-              Qty
-            </span>
             <input
               type="number"
               min="1"
               max="5000"
               value={shares}
               onChange={(e) => setShares(e.target.value)}
-              className="w-full pl-11 pr-24 py-2 rounded-lg border border-border bg-input/50 text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full pl-3 pr-24 py-2 rounded-lg border border-border bg-input/50 text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               required
             />
             <div className="absolute right-3 text-xs text-muted-foreground font-mono tabular-nums">
@@ -152,12 +191,39 @@ export function QuickTrade() {
           </div>
         </div>
 
+        {/* Watchdog Active Cooldown Guardrail Card */}
+        {(cooldownRemaining > 0 || isLockedForReflection) && (
+          <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-1.5 text-xs">
+            <div className="flex items-center justify-between font-bold">
+              <span className="flex items-center gap-1.5">
+                <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>Watchdog Guardrail Active</span>
+              </span>
+              {cooldownRemaining > 0 && (
+                <span className="flex items-center gap-1 font-mono text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded text-[11px]">
+                  <Clock className="h-3 w-3 animate-spin" />
+                  {cooldownRemaining}s
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-amber-200/90 leading-relaxed font-sans">
+              {lockReason || (cooldownRemaining > 0
+                ? `Trading cooldown instituted after consecutive losses. Buy orders are paused to prevent impulse trades.`
+                : `Mandatory reflection required before entering new positions.`)}
+            </p>
+            <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold pt-0.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+              <span>SELL / exit orders are always permitted to protect capital.</span>
+            </div>
+          </div>
+        )}
+
         {/* Watchdog Behavioral Warning Confirmation Banner */}
         {watchdogWarning && (
           <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-2">
             <div className="flex items-center gap-1.5 font-bold text-xs">
               <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-              <span>Watchdog Notice</span>
+              <span>Watchdog Behavioral Notice</span>
             </div>
             <p className="text-[11px] text-amber-200/90 leading-relaxed">
               {watchdogWarning}
@@ -166,18 +232,36 @@ export function QuickTrade() {
               <button
                 type="button"
                 onClick={() => handleTrade(undefined, true)}
-                className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition"
+                className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition cursor-pointer"
               >
-                Proceed
+                Acknowledge & Proceed
               </button>
               <button
                 type="button"
                 onClick={() => setWatchdogWarning(null)}
-                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground text-xs font-medium transition"
+                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground text-xs font-medium transition cursor-pointer"
               >
                 Cancel
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Post-Trade Debrief Card (Appears after selling) */}
+        {latestDebrief && latestDebrief.symbol === selectedSymbol && (
+          <div className="p-3 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-200 space-y-1 text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-purple-300 text-[11px]">
+              <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+              <span>{latestDebrief.title}</span>
+            </div>
+            <p className="text-[11px] text-purple-200/90 leading-relaxed font-sans">
+              {latestDebrief.summary}
+            </p>
+            {latestDebrief.lesson && (
+              <p className="text-[10px] text-purple-300 font-semibold pt-0.5">
+                💡 Lesson: {latestDebrief.lesson}
+              </p>
+            )}
           </div>
         )}
 
@@ -188,7 +272,7 @@ export function QuickTrade() {
               type="button"
               onClick={() => setTradeType("BUY")}
               className={cn(
-                "px-2.5 py-1 rounded-md transition-colors",
+                "px-2.5 py-1 rounded-md transition-colors cursor-pointer",
                 tradeType === "BUY"
                   ? "bg-emerald-500 text-black font-bold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -200,7 +284,7 @@ export function QuickTrade() {
               type="button"
               onClick={() => setTradeType("SELL")}
               className={cn(
-                "px-2.5 py-1 rounded-md transition-colors",
+                "px-2.5 py-1 rounded-md transition-colors cursor-pointer",
                 tradeType === "SELL"
                   ? "bg-rose-500 text-white font-bold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -212,7 +296,7 @@ export function QuickTrade() {
 
           <button
             type="submit"
-            disabled={!canAfford || numShares <= 0}
+            disabled={!canAfford || numShares <= 0 || isBuyBlocked}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-bold text-xs transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
               tradeType === "BUY"
@@ -221,7 +305,11 @@ export function QuickTrade() {
             )}
           >
             <Send className="h-3.5 w-3.5" />
-            <span>Execute {tradeType}</span>
+            <span>
+              {isBuyBlocked
+                ? `Buy Locked (${cooldownRemaining}s)`
+                : `Execute ${tradeType}`}
+            </span>
           </button>
         </div>
 

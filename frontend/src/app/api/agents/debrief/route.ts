@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth-service";
+import { supabase } from "@/lib/supabase";
 
 /**
  * POST /api/agents/debrief
@@ -81,6 +82,72 @@ export async function POST(req: NextRequest) {
         success: false,
         message: `Internal server error during debrief generation: ${error?.message || String(error)}`,
       },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/agents/debrief?tradeId=ORD-12345
+ * Pure read-only retrieval of a pre-computed post-trade debrief from the agent_runs store.
+ * Strictly queries the persisted audit log. Never calls the LLM agent or triggers generation.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const tradeId = searchParams.get("tradeId") || searchParams.get("trade_id");
+    if (!tradeId) {
+      return NextResponse.json(
+        { success: false, message: "A valid tradeId query parameter is required." },
+        { status: 400 }
+      );
+    }
+
+    // Pure read from Supabase agent_runs table
+    try {
+      const { data, error } = await supabase
+        .from("agent_runs")
+        .select("output, created_at")
+        .eq("user_id", user.id)
+        .eq("trade_id", String(tradeId))
+        .eq("agent_name", "post_trade_debrief")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.output) {
+        const debrief = typeof data.output === "string" ? JSON.parse(data.output) : data.output;
+        return NextResponse.json({
+          success: true,
+          ...debrief,
+          created_at: data.created_at,
+          is_cached: true,
+          is_stored: true,
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn("Direct Supabase agent_runs lookup error:", dbErr?.message || dbErr);
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "No stored debrief found for this trade.",
+        is_stored: false,
+      },
+      { status: 404 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: "Failed to retrieve stored debrief." },
       { status: 500 }
     );
   }

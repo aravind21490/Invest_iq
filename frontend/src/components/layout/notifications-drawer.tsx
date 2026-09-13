@@ -265,7 +265,12 @@ export function NotificationsDrawer() {
                       )}
 
                       {/* Category Badge */}
-                      {isSignal ? (
+                      {item.id.startsWith("curator-") ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30">
+                          <Sparkles className="h-3 w-3" />
+                          <span>CURATOR PICK</span>
+                        </span>
+                      ) : isSignal ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                           <Sparkles className="h-3 w-3" />
                           <span>AI SIGNAL</span>
@@ -296,13 +301,22 @@ export function NotificationsDrawer() {
                   </div>
 
                   {/* Notification Content */}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <h3 className="font-semibold text-xs text-foreground tracking-tight leading-snug">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {item.message}
-                    </p>
+                    {item.id.startsWith("curator-") ? (
+                      <div className="border-l-2 border-violet-500/60 bg-violet-500/5 p-2 rounded text-xs text-foreground/90 font-sans leading-relaxed">
+                        <span className="font-bold text-violet-400 block text-[10px] uppercase tracking-wider mb-0.5">
+                          Technical Rationale
+                        </span>
+                        {item.message}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {item.message}
+                      </p>
+                    )}
                   </div>
 
                   {/* Actions footer */}

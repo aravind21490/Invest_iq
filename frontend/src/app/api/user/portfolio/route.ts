@@ -63,6 +63,10 @@ export async function GET() {
     ((totalReturn / portfolio.initialBalance) * 100).toFixed(2)
   );
 
+  const nowEpoch = Date.now() / 1000;
+  const cooldownUntil = portfolio.cooldownUntil || 0;
+  const cooldownRemaining = cooldownUntil > nowEpoch ? Math.ceil(cooldownUntil - nowEpoch) : 0;
+
   return NextResponse.json(
     {
       success: true,
@@ -83,6 +87,11 @@ export async function GET() {
         totalReturnPercent,
         unrealizedPnL: Number(totalUnrealizedPnL.toFixed(2)),
         updatedAt: portfolio.updatedAt,
+        isLockedForReflection: Boolean(portfolio.isLockedForReflection),
+        cooldownUntil,
+        cooldownRemaining,
+        lossStreak: portfolio.lossStreak || 0,
+        lockReason: portfolio.lockReason || "",
       },
       positions: enrichedPositions,
       trades,

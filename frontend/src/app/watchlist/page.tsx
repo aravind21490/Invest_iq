@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -8,14 +8,36 @@ import {
   Sparkles,
   ArrowRight,
   Trash2,
+  PlusCircle,
+  CheckCheck,
+  Bot,
 } from "lucide-react";
 import { TICKERS } from "@/lib/mock-data";
 import { useSimulator } from "@/lib/store";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 
+interface CuratorSuggestion {
+  symbol: string;
+  setup_title?: string;
+  reason: string;
+}
+
 export default function WatchlistPage() {
   const { watchlist, toggleWatchlist, currency } = useSimulator();
   const [filter, setFilter] = useState<"ALL" | "GAINERS" | "LOSERS">("ALL");
+  const [curatorPicks, setCuratorPicks] = useState<CuratorSuggestion[]>([]);
+
+  // CRITICAL REQUIREMENT: Pure GET read only; never triggers run_daily_curation or consumes user's quota
+  useEffect(() => {
+    fetch("/api/agents/curate", { method: "GET" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.suggestions)) {
+          setCuratorPicks(data.suggestions);
+        }
+      })
+      .catch((err) => console.debug("Watchlist curator GET fetch notice:", err));
+  }, []);
 
   const watchlistTickers = Object.values(TICKERS).filter((t) =>
     watchlist.includes(t.symbol)
@@ -29,6 +51,7 @@ export default function WatchlistPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -46,7 +69,7 @@ export default function WatchlistPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                "px-2.5 py-1 rounded-md transition-all",
+                "px-2.5 py-1 rounded-md transition-all cursor-pointer",
                 filter === f
                   ? "bg-card text-foreground font-semibold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -57,6 +80,85 @@ export default function WatchlistPage() {
           ))}
         </div>
       </div>
+
+      {/* Curator Agent Curated Opportunities Shelf */}
+      {curatorPicks.length > 0 && (
+        <div className="fintech-card p-5 space-y-3.5 border-violet-500/30 bg-gradient-to-br from-card via-card to-violet-950/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-violet-500/15 text-violet-400 border border-violet-500/30 flex items-center justify-center">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Curator AI Daily Setups</span>
+                  <span className="rounded bg-violet-500/20 text-violet-300 text-[10px] px-1.5 py-0.2 font-mono font-semibold">
+                    {curatorPicks.length} Recommended
+                  </span>
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Algorithmic setups matching your risk profile and market momentum
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
+              Cached daily run • Zero quota consumed
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {curatorPicks.map((pick, idx) => {
+              const inWatchlist = watchlist.includes(pick.symbol);
+              return (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-xl border border-border/80 bg-card/80 space-y-2 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-foreground font-mono">
+                        {pick.symbol}
+                      </span>
+                      <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded">
+                        {pick.setup_title || "Momentum Setup"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {pick.reason}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                    <Link
+                      href={`/trade?symbol=${encodeURIComponent(pick.symbol)}`}
+                      className="text-primary hover:underline font-semibold text-[11px] inline-flex items-center gap-1"
+                    >
+                      <span>Analyze Stock</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
+
+                    {inWatchlist ? (
+                      <span className="text-emerald-400 font-semibold text-[11px] inline-flex items-center gap-1">
+                        <CheckCheck className="h-3.5 w-3.5" />
+                        <span>In Watchlist</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleWatchlist(pick.symbol)}
+                        className="text-emerald-400 hover:text-emerald-300 font-semibold text-[11px] inline-flex items-center gap-1 cursor-pointer transition"
+                      >
+                        <PlusCircle className="h-3.5 w-3.5" />
+                        <span>+ Add to Watchlist</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Grid of Watchlist Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

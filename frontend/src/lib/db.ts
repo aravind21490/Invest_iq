@@ -22,6 +22,10 @@ export interface Portfolio {
   cashBalance: number;
   initialBalance: number;
   updatedAt: string;
+  isLockedForReflection?: boolean;
+  cooldownUntil?: number;
+  lossStreak?: number;
+  lockReason?: string;
 }
 
 export interface Position {
@@ -94,6 +98,10 @@ function mapPortfolio(row: any): Portfolio {
     cashBalance: Number(row.cash_balance),
     initialBalance: Number(row.initial_balance),
     updatedAt: row.updated_at,
+    isLockedForReflection: Boolean(row.is_locked_for_reflection),
+    cooldownUntil: Number(row.cooldown_until) || 0,
+    lossStreak: Number(row.loss_streak) || 0,
+    lockReason: row.lock_reason || "",
   };
 }
 

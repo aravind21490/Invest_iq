@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   ArrowDownLeft,
@@ -9,17 +9,70 @@ import {
   Hash,
   MoreHorizontal,
   Download,
+  Sparkles,
+  X,
+  BookOpen,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
-import { useSimulator } from "@/lib/store";
+import { useSimulator, Trade } from "@/lib/store";
 import { TICKERS } from "@/lib/mock-data";
 import { formatCurrency, cn } from "@/lib/utils";
 
 export default function TradeHistoryPage() {
-  const { trades, currency } = useSimulator();
+  const { trades, currency, debriefsByTradeId } = useSimulator();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+
+  // Stored debrief modal state
+  const [debriefModalTrade, setDebriefModalTrade] = useState<Trade | null>(null);
+  const [modalDebriefData, setModalDebriefData] = useState<any | null>(null);
+  const [isLoadingDebrief, setIsLoadingDebrief] = useState(false);
+  const [debriefError, setDebriefError] = useState<string | null>(null);
+
+  const handleOpenDebrief = async (trade: Trade) => {
+    setDebriefModalTrade(trade);
+    setDebriefError(null);
+
+    // 1. Check client store cache first (0 network calls)
+    if (debriefsByTradeId && debriefsByTradeId[trade.id]) {
+      setModalDebriefData(debriefsByTradeId[trade.id]);
+      setIsLoadingDebrief(false);
+      return;
+    }
+
+    // 2. Pure read from GET /api/agents/debrief?tradeId=... (0 LLM calls, read-only from agent_runs)
+    setIsLoadingDebrief(true);
+    try {
+      const res = await fetch(`/api/agents/debrief?tradeId=${encodeURIComponent(trade.id)}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok && data && (data.success || data.debrief)) {
+        setModalDebriefData(data.debrief || data);
+      } else {
+        setDebriefError(
+          data?.message || "No stored debrief found for this trade in the audit ledger."
+        );
+      }
+    } catch (err: any) {
+      setDebriefError("Could not retrieve stored debrief.");
+    } finally {
+      setIsLoadingDebrief(false);
+    }
+  };
+
+  const handleCloseDebrief = () => {
+    setDebriefModalTrade(null);
+    setModalDebriefData(null);
+    setDebriefError(null);
+    setIsLoadingDebrief(false);
+  };
 
   // 1. Summary calculations
   const totalBought = trades
@@ -154,7 +207,7 @@ export default function TradeHistoryPage() {
       {/* 2. Filter Bar */}
       <div className="fintech-card p-4 flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          {/* Search Input with magnifying-glass icon */}
+          {/* Search Input */}
           <div className="relative w-full sm:w-64">
             <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -166,7 +219,7 @@ export default function TradeHistoryPage() {
             />
           </div>
 
-          {/* Two dropdown filters */}
+          {/* Dropdown filters */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
               value={statusFilter}
@@ -218,10 +271,10 @@ export default function TradeHistoryPage() {
         </div>
       </div>
 
-      {/* 3. Table with Checkboxes, Logo + Sector tag, Sign-prefixed Amount, Status pill, and overflow menu */}
+      {/* 3. Table with Checkboxes, Logo + Sector tag, Amount, Date, Status, AI Debrief button */}
       <div className="fintech-card p-5 sm:p-6 space-y-4">
         <div className="overflow-x-auto -mx-5 sm:-mx-6 px-5 sm:px-6">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-[750px]">
             <thead>
               <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <th className="pb-3 w-8">
@@ -240,6 +293,7 @@ export default function TradeHistoryPage() {
                 <th className="pb-3 font-semibold text-right">Amount</th>
                 <th className="pb-3 font-semibold text-right">Date</th>
                 <th className="pb-3 font-semibold text-center">Status</th>
+                <th className="pb-3 font-semibold text-center">AI Analysis</th>
                 <th className="pb-3 font-semibold text-right w-8"></th>
               </tr>
             </thead>
@@ -252,6 +306,7 @@ export default function TradeHistoryPage() {
                 };
                 const isBuy = trade.type === "BUY";
                 const isSelected = selectedTrades.includes(trade.id);
+                const hasCachedDebrief = Boolean(debriefsByTradeId?.[trade.id]);
 
                 return (
                   <tr
@@ -323,6 +378,29 @@ export default function TradeHistoryPage() {
                       </span>
                     </td>
 
+                    {/* AI Debrief Action: Pure Read of Stored Debrief */}
+                    <td className="py-3.5 text-center">
+                      {trade.type === "SELL" ? (
+                        <button
+                          onClick={() => handleOpenDebrief(trade)}
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all border",
+                            hasCachedDebrief
+                              ? "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25"
+                              : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                          )}
+                          title="View stored AI post-trade debrief (zero LLM calls)"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          <span>AI Debrief</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic">
+                          Exit only
+                        </span>
+                      )}
+                    </td>
+
                     {/* Row-hover "···" overflow menu */}
                     <td className="py-3.5 text-right">
                       <button className="p-1 rounded hover:bg-muted text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
@@ -336,6 +414,168 @@ export default function TradeHistoryPage() {
           </table>
         </div>
       </div>
+
+      {/* 4. AI Post-Trade Debrief Modal (Stored debrief view - pure read) */}
+      {debriefModalTrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="fintech-card max-w-xl w-full bg-card border border-border shadow-2xl p-6 space-y-5 rounded-2xl overflow-hidden animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-foreground">
+                      AI Post-Trade Debrief
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted border border-border text-muted-foreground tracking-wider uppercase">
+                      Stored Record
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    {debriefModalTrade.symbol} • {debriefModalTrade.id} • {debriefModalTrade.timestamp}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCloseDebrief}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            {isLoadingDebrief ? (
+              <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                <span className="text-xs text-muted-foreground">
+                  Retrieving pre-computed debrief from audit ledger...
+                </span>
+              </div>
+            ) : debriefError ? (
+              <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-2 text-center">
+                <AlertCircle className="h-6 w-6 text-amber-400 mx-auto" />
+                <p className="text-xs text-muted-foreground">{debriefError}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Debriefs are generated once when an exit (SELL) order is executed and stored in the database.
+                </p>
+              </div>
+            ) : modalDebriefData ? (
+              <div className="space-y-4">
+                {/* Metric Summary Tiles */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="p-3 rounded-xl bg-card border border-border space-y-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Realized P&amp;L
+                    </span>
+                    <div
+                      className={cn(
+                        "text-base font-bold",
+                        (modalDebriefData.realized_pnl ?? debriefModalTrade.pnl ?? 0) >= 0
+                          ? "text-emerald-500"
+                          : "text-rose-500"
+                      )}
+                    >
+                      {(modalDebriefData.realized_pnl ?? debriefModalTrade.pnl ?? 0) >= 0 ? "+" : ""}
+                      {formatCurrency(
+                        modalDebriefData.realized_pnl ?? debriefModalTrade.pnl ?? 0,
+                        currency
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card border border-border space-y-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Trade Outcome
+                    </span>
+                    <div className="text-xs font-bold text-foreground">
+                      {(modalDebriefData.realized_pnl ?? debriefModalTrade.pnl ?? 0) >= 0 ? (
+                        <span className="text-emerald-500 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Profitable Exit
+                        </span>
+                      ) : (
+                        <span className="text-rose-400 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" /> Managed Loss
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-card border border-border space-y-1 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Setup Win Rate
+                    </span>
+                    <div className="text-xs font-bold text-foreground">
+                      {modalDebriefData.setup_win_rate
+                        ? `${Math.round(modalDebriefData.setup_win_rate * 100)}% Historical`
+                        : modalDebriefData.win_rate
+                        ? `${Math.round(modalDebriefData.win_rate * 100)}% Win Rate`
+                        : "Empirical Setup"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Entry Setup Mechanics */}
+                {modalDebriefData.setup_at_entry && (
+                  <div className="p-3.5 rounded-xl bg-muted/30 border border-border/80 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                      Technical Setup At Entry
+                    </span>
+                    <p className="text-xs text-foreground">
+                      {modalDebriefData.setup_at_entry}
+                    </p>
+                  </div>
+                )}
+
+                {/* Debrief Summary */}
+                <div className="p-4 rounded-xl bg-muted/20 border border-border space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    AI Execution Review
+                  </span>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {modalDebriefData.summary ||
+                      modalDebriefData.explanation ||
+                      modalDebriefData.content ||
+                      "Trade execution analysis stored upon transaction settlement."}
+                  </p>
+                </div>
+
+                {/* Lesson Learned / Discipline Focus */}
+                {(modalDebriefData.lesson_learned || modalDebriefData.takeaway) && (
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                      <BookOpen className="h-3.5 w-3.5" />
+                      <span>Key Discipline Lesson</span>
+                    </div>
+                    <p className="text-xs text-amber-200 leading-relaxed">
+                      {modalDebriefData.lesson_learned || modalDebriefData.takeaway}
+                    </p>
+                  </div>
+                )}
+
+                {/* Educational Disclaimer & Cache Notice */}
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Stored debrief • Pure read (0 LLM tokens consumed)
+                  </span>
+                  <button
+                    onClick={handleCloseDebrief}
+                    className="px-3 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground font-semibold transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

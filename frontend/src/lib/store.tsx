@@ -3,6 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { TradeRecord, Position } from "./mock-data";
 
+export type { TradeRecord, Position };
+export type Trade = TradeRecord;
+
 export interface UserSession {
   id: string;
   name: string;
@@ -79,6 +82,25 @@ interface SimulatorContextType {
   resetSimulationCash: (amount?: number) => void;
   refreshPortfolio: () => Promise<void>;
   signOut: () => Promise<void>;
+  cooldownRemaining: number;
+  isLockedForReflection: boolean;
+  lockReason: string;
+  lossStreak: number;
+  curatorSuggestions: any[];
+  latestDebrief: {
+    tradeId: string;
+    symbol: string;
+    title: string;
+    summary: string;
+    lesson: string;
+  } | null;
+  debriefsByTradeId: Record<string, {
+    tradeId: string;
+    symbol: string;
+    title: string;
+    summary: string;
+    lesson: string;
+  }>;
   executePaperTrade: (trade: {
     symbol: string;
     type: "BUY" | "SELL";
@@ -135,6 +157,49 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
       type: "system",
     },
   ]);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [isLockedForReflection, setIsLockedForReflection] = useState<boolean>(false);
+  const [lockReason, setLockReason] = useState<string>("");
+  const [lossStreak, setLossStreak] = useState<number>(0);
+  const [curatorSuggestions, setCuratorSuggestions] = useState<any[]>([]);
+  const [latestDebrief, setLatestDebrief] = useState<{
+    tradeId: string;
+    symbol: string;
+    title: string;
+    summary: string;
+    lesson: string;
+  } | null>(null);
+  const [debriefsByTradeId, setDebriefsByTradeId] = useState<Record<string, {
+    tradeId: string;
+    symbol: string;
+    title: string;
+    summary: string;
+    lesson: string;
+  }>>({});
+
+  // Active client countdown timer for Watchdog cooldowns
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownRemaining]);
+
+  // Re-sync server cooldown status when window regains focus
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshPortfolio();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Load authenticated user and real portfolio from backend DB
   const refreshPortfolio = useCallback(async () => {
@@ -157,6 +222,10 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
             setTotalPortfolioValue(data.portfolio.totalPortfolioValue);
             setDayChange(data.portfolio.totalReturn || 0);
             setDayChangePercent(data.portfolio.totalReturnPercent || 0);
+            setIsLockedForReflection(Boolean(data.portfolio.isLockedForReflection));
+            setCooldownRemaining(Number(data.portfolio.cooldownRemaining) || 0);
+            setLockReason(data.portfolio.lockReason || "");
+            setLossStreak(Number(data.portfolio.lossStreak) || 0);
           }
           if (data.positions) {
             const mappedPositions: Position[] = (data.positions as ApiPosition[]).map((p) => ({
@@ -205,6 +274,7 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
         if (curateRes.ok) {
           const curateData = await curateRes.json();
           if (curateData.success && Array.isArray(curateData.suggestions)) {
+            setCuratorSuggestions(curateData.suggestions);
             const curatorNotifs: NotificationItem[] = curateData.suggestions.map((s: any, idx: number) => ({
               id: `curator-${s.symbol.toLowerCase()}-${idx}`,
               title: `Curator Pick: ${s.symbol} — ${s.setup_title || "Technical Setup"}`,
@@ -379,6 +449,8 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
 
       // Check if Watchdog or RPC blocked execution
       if (data.blocked || res.status === 403) {
+        // Re-sync server portfolio to fetch active cooldown_until / lock_reason
+        void refreshPortfolio();
         return {
           success: false,
           blocked: true,
@@ -419,11 +491,21 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
             if (debriefRes.ok) {
               const debriefData = await debriefRes.json();
               if (debriefData && debriefData.success) {
+                const debriefObj = {
+                  tradeId: String(tradeId),
+                  symbol,
+                  title: debriefData.title || `AI Post-Trade Debrief: ${symbol}`,
+                  summary: debriefData.summary || "",
+                  lesson: debriefData.lesson || "",
+                };
+                setLatestDebrief(debriefObj);
+                setDebriefsByTradeId((prev) => ({ ...prev, [String(tradeId)]: debriefObj }));
+
                 setNotifications((prev) => [
                   {
                     id: `debrief-${Date.now()}-${tradeId}`,
-                    title: debriefData.title || `AI Post-Trade Debrief: ${symbol}`,
-                    message: `${debriefData.summary} Lesson: ${debriefData.lesson || ""}`,
+                    title: debriefObj.title,
+                    message: `${debriefObj.summary} Lesson: ${debriefObj.lesson}`,
                     time: "Just now",
                     read: false,
                     type: "trade",
@@ -486,6 +568,13 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
         refreshPortfolio,
         signOut,
         executePaperTrade,
+        cooldownRemaining,
+        isLockedForReflection,
+        lockReason,
+        lossStreak,
+        curatorSuggestions,
+        latestDebrief,
+        debriefsByTradeId,
       }}
     >
       {children}

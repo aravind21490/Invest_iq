@@ -234,23 +234,85 @@ export default function ResearchAgentPage() {
 
                     {/* Expandable Trace Drawer */}
                     {expandedTraceId === msg.id && msg.toolTrace && (
-                      <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-2.5 border border-border font-mono text-[11px]">
-                        <div className="font-semibold text-foreground flex items-center gap-1">
-                          <Terminal className="h-3.5 w-3.5 text-primary" /> Bounded Tool Execution Trace:
+                      <div className="mt-2.5 space-y-2.5 rounded-xl bg-card border border-border/80 p-3 text-[11px]">
+                        <div className="font-bold text-foreground flex items-center justify-between border-b border-border/50 pb-2">
+                          <span className="flex items-center gap-1.5 font-mono text-xs">
+                            <Terminal className="h-3.5 w-3.5 text-primary" />
+                            <span>Tool Execution Trace ({msg.toolTrace.length} calls)</span>
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-sans">
+                            Read-only bounded runner (Max 4 steps)
+                          </span>
                         </div>
-                        {msg.toolTrace.map((item, idx) => (
-                          <div key={idx} className="border-l-2 border-primary/50 pl-2 space-y-0.5">
-                            <div className="text-primary font-bold">
-                              Step {item.step}: {item.tool}()
-                            </div>
-                            <div className="text-muted-foreground text-[10px]">
-                              Args: {JSON.stringify(item.arguments)}
-                            </div>
-                            <div className="text-muted-foreground text-[10px] truncate max-w-full">
-                              Result: {JSON.stringify(item.result).substring(0, 140)}...
-                            </div>
-                          </div>
-                        ))}
+                        <div className="space-y-2">
+                          {msg.toolTrace.map((item, idx) => {
+                            const isIndicators = item.tool === "get_indicators";
+                            const isSignals = item.tool === "get_signals";
+                            const isWinRate = item.tool === "get_win_rate";
+                            const isWatchlist = item.tool === "get_user_watchlist";
+                            const isPattern = item.tool === "get_recent_trade_pattern";
+
+                            const toolColor = isIndicators
+                              ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                              : isSignals
+                              ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                              : isWinRate
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                              : isWatchlist
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                              : "bg-primary/10 text-primary border-primary/30";
+
+                            return (
+                              <div
+                                key={idx}
+                                className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-1.5 font-mono text-[11px]"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground border border-border">
+                                      #{item.step}
+                                    </span>
+                                    <span
+                                      className={`rounded px-2 py-0.5 text-[11px] font-bold border ${toolColor}`}
+                                    >
+                                      {item.tool}()
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Arguments */}
+                                {item.arguments && Object.keys(item.arguments).length > 0 && (
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <span className="text-[10px] text-muted-foreground uppercase font-sans font-semibold">
+                                      Args:
+                                    </span>
+                                    {Object.entries(item.arguments).map(([k, v]) => (
+                                      <span
+                                        key={k}
+                                        className="rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-foreground border border-border/50"
+                                      >
+                                        <span className="text-muted-foreground">{k}:</span>{" "}
+                                        <strong className="text-primary">{String(v)}</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Result Preview */}
+                                <div className="pt-1 text-[10px] text-muted-foreground bg-background/40 rounded p-1.5 border border-border/40 overflow-x-auto leading-relaxed">
+                                  <span className="text-muted-foreground/80 uppercase font-sans font-semibold block text-[9px] mb-0.5">
+                                    Output:
+                                  </span>
+                                  <code className="text-foreground/90 font-mono break-all">
+                                    {typeof item.result === "string"
+                                      ? item.result
+                                      : JSON.stringify(item.result, null, 1)}
+                                  </code>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

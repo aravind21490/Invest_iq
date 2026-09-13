@@ -15,7 +15,7 @@ import confetti from "canvas-confetti";
 import { useSimulator } from "@/lib/store";
 import { formatCurrency, formatPercent, cn } from "@/lib/utils";
 import { ChartPoint } from "@/lib/market-api";
-import { Search, RotateCcw } from "lucide-react";
+import { Search, RotateCcw, ShieldAlert, Clock, Sparkles, ShieldCheck } from "lucide-react";
 
 const QUICK_MARKET_SYMBOLS = [
   { symbol: "RELIANCE.NS", label: "RELIANCE" },
@@ -36,11 +36,20 @@ function TradeTerminalContent() {
   const searchParams = useSearchParams();
   const initialSymbol = searchParams.get("symbol") || "RELIANCE.NS";
 
-  const { cash, executePaperTrade, positions } = useSimulator();
+  const {
+    cash,
+    executePaperTrade,
+    positions,
+    cooldownRemaining,
+    isLockedForReflection,
+    lockReason,
+    latestDebrief,
+  } = useSimulator();
   const [selectedSymbol, setSelectedSymbol] = useState<string>(initialSymbol);
   const isGlobalStock = !selectedSymbol.endsWith(".NS") && !selectedSymbol.startsWith("^");
   const symbolCurrency = isGlobalStock ? "USD" : "INR";
   const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
+  const isBuyBlocked = tradeType === "BUY" && (cooldownRemaining > 0 || isLockedForReflection);
   const [orderMode, setOrderMode] = useState<"Market" | "Limit" | "Stop">("Market");
   const [shares, setShares] = useState<string>("10");
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
@@ -594,6 +603,33 @@ function TradeTerminalContent() {
               </div>
             )}
 
+            {/* Watchdog Active Cooldown Guardrail Card */}
+            {(cooldownRemaining > 0 || isLockedForReflection) && (
+              <div className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-2 text-xs">
+                <div className="flex items-center justify-between font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span>Watchdog Guardrail Active</span>
+                  </span>
+                  {cooldownRemaining > 0 && (
+                    <span className="flex items-center gap-1 font-mono text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded text-[11px]">
+                      <Clock className="h-3 w-3 animate-spin" />
+                      {cooldownRemaining}s
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed font-sans">
+                  {lockReason || (cooldownRemaining > 0
+                    ? `Trading cooldown instituted after consecutive losses. Buy orders are paused to prevent impulse trades.`
+                    : `Mandatory reflection required before entering new positions.`)}
+                </p>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold pt-0.5">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                  <span>SELL / exit orders are always permitted to protect capital.</span>
+                </div>
+              </div>
+            )}
+
             {/* Watchdog Behavioral Warning Confirmation Banner */}
             {watchdogWarning && (
               <div className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-2.5">
@@ -608,14 +644,14 @@ function TradeTerminalContent() {
                   <button
                     type="button"
                     onClick={() => handleExecute(undefined, true)}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition shadow-sm"
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition shadow-sm cursor-pointer"
                   >
                     Acknowledge & Proceed
                   </button>
                   <button
                     type="button"
                     onClick={() => setWatchdogWarning(null)}
-                    className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition"
+                    className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition cursor-pointer"
                   >
                     Cancel Order
                   </button>
@@ -623,18 +659,40 @@ function TradeTerminalContent() {
               </div>
             )}
 
+            {/* Post-Trade Debrief Card */}
+            {latestDebrief && latestDebrief.symbol === selectedSymbol && (
+              <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-200 space-y-1.5 text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-purple-300 text-xs">
+                  <Sparkles className="h-4 w-4 text-purple-400 shrink-0" />
+                  <span>{latestDebrief.title}</span>
+                </div>
+                <p className="text-[11px] text-purple-200/90 leading-relaxed font-sans">
+                  {latestDebrief.summary}
+                </p>
+                {latestDebrief.lesson && (
+                  <p className="text-[11px] text-purple-300 font-semibold pt-0.5">
+                    💡 Key Lesson: {latestDebrief.lesson}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={numShares <= 0 || (tradeType === "BUY" && totalCost > cash)}
+              disabled={numShares <= 0 || (tradeType === "BUY" && totalCost > cash) || isBuyBlocked}
               className={cn(
-                "w-full py-2.5 rounded-lg font-bold text-sm text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md",
+                "w-full py-2.5 rounded-lg font-bold text-sm text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer",
                 tradeType === "BUY"
                   ? "bg-emerald-600 hover:bg-emerald-500"
                   : "bg-rose-600 hover:bg-rose-500"
               )}
             >
-              {tradeType === "BUY" ? "Place Buy Order (₹)" : "Place Sell Order (₹)"}
+              {isBuyBlocked
+                ? `Buy Order Blocked (${cooldownRemaining}s)`
+                : tradeType === "BUY"
+                ? "Place Buy Order (₹)"
+                : "Place Sell Order (₹)"}
             </button>
             <p className="text-[10px] text-center text-muted-foreground">
               Direct simulated paper execution on live NSE feeds • No real financial capital at risk
