@@ -60,24 +60,33 @@ def make_request(
 
     req = urllib.request.Request(url, data=body_bytes, headers=headers, method=method)
 
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            status = resp.status
-            raw = resp.read().decode("utf-8")
-            try:
-                parsed = json.loads(raw)
-            except Exception:
-                parsed = {"raw": raw}
-            return status, parsed
-    except urllib.error.HTTPError as err:
-        err_body = err.read().decode("utf-8")
+    for attempt in range(2):
         try:
-            parsed = json.loads(err_body)
-        except Exception:
-            parsed = {"raw": err_body}
-        return err.code, parsed
-    except Exception as e:
-        return 0, {"error": str(e)}
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                status = resp.status
+                raw = resp.read().decode("utf-8")
+                try:
+                    parsed = json.loads(raw)
+                except Exception:
+                    parsed = {"raw": raw}
+                return status, parsed
+        except urllib.error.HTTPError as err:
+            err_body = err.read().decode("utf-8")
+            try:
+                parsed = json.loads(err_body)
+            except Exception:
+                parsed = {"raw": err_body}
+            if attempt == 0 and ("gateway timeout" in str(parsed).lower() or err.code in (502, 504)):
+                time.sleep(2)
+                continue
+            return err.code, parsed
+        except Exception as e:
+            if attempt == 0:
+                time.sleep(2)
+                continue
+            return 0, {"error": str(e)}
+    return 0, {"error": "Request failed after retry"}
+
 
 
 def run_smoke_test(base_url: str, cookie: str, bypass: str = ""):
