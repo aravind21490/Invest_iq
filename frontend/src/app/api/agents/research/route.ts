@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
 
     // 3. Server-Only Shared Secret for Flask Bridge
     const agentSecret = process.env.AGENT_SERVICE_SECRET;
-    const flaskBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    const flaskBaseUrl =
+      process.env.FLASK_API_URL ||
+      process.env.FLASK_ORIGIN ||
+      process.env.API_URL ||
+      "http://127.0.0.1:5000";
     const targetUrl = `${flaskBaseUrl.replace(/\/$/, "")}/api/agents/research`;
 
     const controller = new AbortController();

@@ -62,7 +62,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Forward to Flask agent backend with shared secret
-    const flaskBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    const flaskBaseUrl =
+      process.env.FLASK_API_URL ||
+      process.env.FLASK_ORIGIN ||
+      process.env.API_URL ||
+      "http://127.0.0.1:5000";
     const targetUrl = `${flaskBaseUrl.replace(/\/$/, "")}/api/agents/curate`;
 
     const flaskRes = await fetch(targetUrl, {
@@ -110,7 +114,11 @@ export async function GET(req: NextRequest) {
 
     // Call Flask with service secret to query today's curator suggestions for this user
     const agentSecret = process.env.AGENT_SERVICE_SECRET;
-    const flaskBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    const flaskBaseUrl =
+      process.env.FLASK_API_URL ||
+      process.env.FLASK_ORIGIN ||
+      process.env.API_URL ||
+      "http://127.0.0.1:5000";
     const targetUrl = `${flaskBaseUrl.replace(/\/$/, "")}/api/agents/curate`;
 
     const flaskRes = await fetch(targetUrl, {

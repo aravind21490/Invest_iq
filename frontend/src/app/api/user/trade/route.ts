@@ -50,7 +50,11 @@ export async function POST(req: NextRequest) {
 
     // Synchronous Watchdog Pre-Trade Behavioral Guardrail Check
     const agentSecret = process.env.AGENT_SERVICE_SECRET;
-    const flaskOrigin = process.env.FLASK_ORIGIN || "http://127.0.0.1:5000";
+    const flaskOrigin =
+      process.env.FLASK_API_URL ||
+      process.env.FLASK_ORIGIN ||
+      process.env.API_URL ||
+      "http://127.0.0.1:5000";
 
     if (agentSecret) {
       try {
