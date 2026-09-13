@@ -23,6 +23,17 @@ export default function TutorialsPage() {
   const [quizSelection, setQuizSelection] = useState<number | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [recommendedLesson, setRecommendedLesson] = useState<{
+    recommended_lesson_id: string;
+    lesson_title: string;
+    tier_id: number;
+    tier_title: string;
+    pattern_type: string;
+    trigger_source: string;
+    rationale: string;
+    nudge_message: string;
+    has_active_flag: boolean;
+  } | null>(null);
 
   // Flatten all topics for easy index lookup
   const allTopics: LessonTopic[] = React.useMemo(() => {
@@ -36,8 +47,16 @@ export default function TutorialsPage() {
   const nextTopic =
     currentTopicIndex < allTopics.length - 1 ? allTopics[currentTopicIndex + 1] : null;
 
-  // Load user progress from DB
+  // Check URL query param and load user progress from DB & agent recommendation
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const topicParam = params.get("topic");
+      if (topicParam && allTopics.some((t) => t.id === topicParam)) {
+        setSelectedTopicId(topicParam);
+      }
+    }
+
     fetch("/api/user/portfolio")
       .then((res) => {
         if (!res.ok) return null;
@@ -51,7 +70,19 @@ export default function TutorialsPage() {
         }
       })
       .catch((err) => console.error("Error loading learn progress:", err));
-  }, []);
+
+    fetch("/api/agents/next-lesson")
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.success && data.recommended_lesson_id) {
+          setRecommendedLesson(data);
+        }
+      })
+      .catch((err) => console.debug("Error loading next lesson recommendation:", err));
+  }, [allTopics]);
 
   const handleSelectTopic = (topicId: string) => {
     setSelectedTopicId(topicId);
@@ -138,6 +169,49 @@ export default function TutorialsPage() {
         </div>
       </div>
 
+      {/* AI Lesson Sequencing Recommendation Banner (Pinned Focus) */}
+      {recommendedLesson && (
+        <div className="fintech-card p-4 sm:p-5 border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent relative overflow-hidden space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="p-1 rounded-md bg-primary/20 text-primary">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                Personalized Lesson Recommendation
+              </span>
+              {recommendedLesson.has_active_flag && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20">
+                  {recommendedLesson.trigger_source === "watchdog" ? "Behavioral Guardrail" : "Trade Setup Debrief"}
+                </span>
+              )}
+            </div>
+
+            {activeTopic.id !== recommendedLesson.recommended_lesson_id && (
+              <button
+                onClick={() => handleSelectTopic(recommendedLesson.recommended_lesson_id)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all self-start sm:self-auto shadow-sm"
+              >
+                <span>Study This Lesson</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-sm sm:text-base font-bold text-foreground">
+              {recommendedLesson.lesson_title}{" "}
+              <span className="text-xs text-muted-foreground font-normal">
+                ({recommendedLesson.tier_title})
+              </span>
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-4xl">
+              {recommendedLesson.nudge_message}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Grid: Left Sidebar Curriculum / Right Active Lesson */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: 6 Tiers Curriculum Menu (4 cols) */}
@@ -175,11 +249,12 @@ export default function TutorialsPage() {
                   </span>
                 </div>
 
-                {/* Tier Topic Buttons */}
+                {/* Tier Topic Buttons (Maintains exact 6-tier progression without reordering) */}
                 <div className="space-y-1">
                   {tier.topics.map((topic) => {
                     const isCompleted = completedTopics.includes(topic.id);
                     const isCurrent = topic.id === activeTopic.id;
+                    const isRecommended = topic.id === recommendedLesson?.recommended_lesson_id;
 
                     return (
                       <button
@@ -187,13 +262,17 @@ export default function TutorialsPage() {
                         onClick={() => handleSelectTopic(topic.id)}
                         className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-all ${
                           isCurrent
-                            ? "bg-secondary text-foreground font-bold shadow-2xs border border-primary/30"
+                            ? "bg-secondary text-foreground font-bold shadow-2xs border border-primary/40"
+                            : isRecommended
+                            ? "border border-primary/40 bg-primary/5 text-foreground hover:bg-primary/10"
                             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate">
                           {isCompleted ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                          ) : isRecommended ? (
+                            <Sparkles className="h-4 w-4 text-primary shrink-0 animate-pulse" />
                           ) : (
                             <div className="h-4 w-4 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground shrink-0 font-mono">
                               •
@@ -202,9 +281,16 @@ export default function TutorialsPage() {
                           <span className="truncate">{topic.title}</span>
                         </div>
 
-                        <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-2">
-                          {topic.duration}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          {isRecommended && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-0.2 rounded border border-primary/25">
+                              Focus
+                            </span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {topic.duration}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}

@@ -40,8 +40,10 @@ export function QuickTrade() {
   const estimatedCost = numShares * currentTicker.price;
   const canAfford = tradeType === "SELL" || cash >= estimatedCost;
 
-  const handleTrade = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [watchdogWarning, setWatchdogWarning] = useState<string | null>(null);
+
+  const handleTrade = async (e?: React.FormEvent, bypassWarning: boolean = false) => {
+    if (e) e.preventDefault();
     if (numShares <= 0) return;
 
     const result = await executePaperTrade({
@@ -49,8 +51,15 @@ export function QuickTrade() {
       type: tradeType,
       shares: numShares,
       price: currentTicker.price,
+      confirmedWarning: bypassWarning,
     });
 
+    if (result.warning && result.requiresConfirmation && !bypassWarning) {
+      setWatchdogWarning(result.message);
+      return;
+    }
+
+    setWatchdogWarning(null);
     if (result.success) {
       setFeedback({ type: "success", message: result.message });
       try {
@@ -61,7 +70,7 @@ export function QuickTrade() {
       setTimeout(() => setFeedback(null), 4000);
     } else {
       setFeedback({ type: "error", message: result.message });
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 5000);
     }
   };
 
@@ -142,6 +151,35 @@ export function QuickTrade() {
             </div>
           </div>
         </div>
+
+        {/* Watchdog Behavioral Warning Confirmation Banner */}
+        {watchdogWarning && (
+          <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-2">
+            <div className="flex items-center gap-1.5 font-bold text-xs">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+              <span>Watchdog Notice</span>
+            </div>
+            <p className="text-[11px] text-amber-200/90 leading-relaxed">
+              {watchdogWarning}
+            </p>
+            <div className="flex items-center gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => handleTrade(undefined, true)}
+                className="px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition"
+              >
+                Proceed
+              </button>
+              <button
+                type="button"
+                onClick={() => setWatchdogWarning(null)}
+                className="px-2.5 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground text-xs font-medium transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Buy / Sell selector and Submit Button */}
         <div className="flex items-center gap-2 pt-1">

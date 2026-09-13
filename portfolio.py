@@ -187,19 +187,8 @@ class VirtualPortfolio:
         """
         Execute a simulated Sell order with fees and capital gains tax provision.
         """
-        in_cooldown, sec_left = self.is_in_cooldown()
-        if in_cooldown:
-            return {
-                "success": False,
-                "error": f"Trading locked in behavioral cooldown ({sec_left}s left). Take a breather to prevent revenge trading.",
-            }
-
-        if self.is_locked_for_reflection:
-            return {
-                "success": False,
-                "error": f"Trading is locked: {self.lock_reason}",
-            }
-
+        # Position exit orders (SELL) are exempt from behavioral cooldowns and reflection locks,
+        # ensuring users can always close positions or cut losses.
         if symbol not in self.positions or self.positions[symbol]["quantity"] <= 0:
             return {"success": False, "error": f"You do not own any shares of {symbol} to sell."}
 

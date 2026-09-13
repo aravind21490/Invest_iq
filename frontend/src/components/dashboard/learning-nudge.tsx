@@ -8,6 +8,13 @@ import { CURRICULUM_TIERS, LessonTopic } from "@/lib/curriculum-data";
 export function LearningNudge() {
   const [completedTopics, setCompletedTopics] = useState<string[]>([]);
   const [streakDays, setStreakDays] = useState<number>(1);
+  const [agentRec, setAgentRec] = useState<{
+    recommended_lesson_id: string;
+    lesson_title: string;
+    tier_title: string;
+    nudge_message: string;
+    has_active_flag: boolean;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/user/portfolio")
@@ -23,6 +30,15 @@ export function LearningNudge() {
         }
       })
       .catch((err) => console.error("Error loading learn progress for dashboard nudge:", err));
+
+    fetch("/api/agents/next-lesson")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success && data.recommended_lesson_id) {
+          setAgentRec(data);
+        }
+      })
+      .catch((err) => console.debug("Error loading next lesson in dashboard nudge:", err));
   }, []);
 
   const allTopics: LessonTopic[] = React.useMemo(() => {
@@ -33,9 +49,12 @@ export function LearningNudge() {
   const completedCount = completedTopics.length;
   const progressPercent = Math.round((completedCount / totalTopics) * 100);
 
-  // Determine the next suggested lesson
+  // Determine the next suggested lesson: prioritize agent recommendation if present
+  const recTopic = agentRec ? allTopics.find((t) => t.id === agentRec.recommended_lesson_id) : null;
   const nextLesson =
-    allTopics.find((t) => !completedTopics.includes(t.id)) || allTopics[allTopics.length - 1];
+    recTopic ||
+    allTopics.find((t) => !completedTopics.includes(t.id)) ||
+    allTopics[allTopics.length - 1];
 
   return (
     <div className="fintech-card p-5 space-y-4 bg-gradient-to-br from-card to-muted/20 border-border">
@@ -85,8 +104,8 @@ export function LearningNudge() {
       {/* Suggested Next Lesson Card */}
       <div className="p-3.5 rounded-xl bg-card border border-border/80 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-            Suggested Next Lesson
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+            {agentRec?.has_active_flag ? "Adaptive Focus" : "Suggested Next Lesson"}
           </span>
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Clock className="h-3 w-3" />
@@ -99,7 +118,7 @@ export function LearningNudge() {
         </h4>
 
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-          {nextLesson.explanation}
+          {agentRec?.nudge_message || nextLesson.explanation}
         </p>
 
         <div className="flex items-center justify-between pt-1">
@@ -108,10 +127,10 @@ export function LearningNudge() {
             <span>Unlocks: {nextLesson.tierTitle} Mastery</span>
           </div>
           <Link
-            href="/learn/tutorials"
+            href={`/learn/tutorials?topic=${nextLesson.id}`}
             className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
           >
-            <span>Continue Lesson</span>
+            <span>Study Lesson</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>

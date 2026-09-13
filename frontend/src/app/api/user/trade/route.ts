@@ -48,6 +48,62 @@ export async function POST(req: NextRequest) {
     const name = quote.name || stockInfo?.name || symbol;
     const sector = stockInfo?.sector || "General";
 
+    // Synchronous Watchdog Pre-Trade Behavioral Guardrail Check
+    const agentSecret = process.env.AGENT_SERVICE_SECRET;
+    const flaskOrigin = process.env.FLASK_ORIGIN || "http://127.0.0.1:5000";
+
+    if (agentSecret) {
+      try {
+        const watchdogRes = await fetch(`${flaskOrigin}/api/agents/watchdog-check`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Agent-Service-Key": agentSecret,
+          },
+          body: JSON.stringify({
+            userId,
+            symbol,
+            shares: Number(shares),
+            type,
+            price: quote.price,
+          }),
+        });
+
+        if (watchdogRes.ok) {
+          const watchdogData = await watchdogRes.json();
+          if (watchdogData && watchdogData.flagged) {
+            // Block severity: completely reject execution with HTTP 403 Forbidden
+            if (watchdogData.severity === "block") {
+              return NextResponse.json(
+                {
+                  success: false,
+                  blocked: true,
+                  message: watchdogData.reason,
+                  lockState: watchdogData.lock_state,
+                },
+                { status: 403 }
+              );
+            }
+
+            // Warning severity: prompt for explicit confirmation if not yet confirmed
+            if (watchdogData.severity === "warning" && !body.confirmedWarning) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  warning: true,
+                  message: watchdogData.reason,
+                  requiresConfirmation: true,
+                },
+                { status: 200 }
+              );
+            }
+          }
+        }
+      } catch (agentErr) {
+        console.warn("Watchdog check bypassed due to bridge connection warning:", agentErr);
+      }
+    }
+
     const result = await recordTrade(userId, {
       symbol: symbol.toUpperCase(),
       name,

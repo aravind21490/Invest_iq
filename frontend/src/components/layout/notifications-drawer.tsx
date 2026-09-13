@@ -29,6 +29,8 @@ export function NotificationsDrawer() {
     markAllNotificationsAsRead,
     clearNotifications,
     addNotification,
+    watchlist,
+    toggleWatchlist,
   } = useSimulator();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
@@ -305,21 +307,46 @@ export function NotificationsDrawer() {
 
                   {/* Actions footer */}
                   <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px]">
-                    {item.symbol ? (
-                      <Link
-                        href={`/trade?symbol=${encodeURIComponent(item.symbol)}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setNotificationsOpen(false);
-                        }}
-                        className="inline-flex items-center gap-1 text-primary hover:underline font-semibold"
-                      >
-                        <span>Trade {item.symbol}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground">Invest IQ Feed</span>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {item.symbol ? (
+                        <Link
+                          href={`/trade?symbol=${encodeURIComponent(item.symbol)}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setNotificationsOpen(false);
+                          }}
+                          className="inline-flex items-center gap-1 text-primary hover:underline font-semibold"
+                        >
+                          <span>Trade {item.symbol}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Invest IQ Feed</span>
+                      )}
+
+                      {/* Watchlist Add/Remove Action Button */}
+                      {item.symbol && (
+                        watchlist.includes(item.symbol) ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                            <CheckCheck className="h-3.5 w-3.5" />
+                            <span>In Watchlist</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWatchlist(item.symbol!);
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 hover:text-emerald-300 hover:underline transition-colors cursor-pointer"
+                            title={`Add ${item.symbol} to your watchlist`}
+                          >
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            <span>Add to Watchlist</span>
+                          </button>
+                        )
+                      )}
+                    </div>
 
                     {!item.read && (
                       <button

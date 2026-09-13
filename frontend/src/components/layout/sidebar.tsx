@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Globe2,
   LogOut,
+  Bot,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useSimulator } from "@/lib/store";
@@ -59,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     group: "INSIGHTS",
     items: [
+      { title: "Research Agent", href: "/research", icon: Bot, badge: "AI" },
       { title: "AI Signals", href: "/learn/signals", icon: Sparkles, badge: "AI" },
       { title: "Analytics", href: "/analytics", icon: BarChart3 },
       { title: "Global Markets", href: "/markets", icon: Globe2 },

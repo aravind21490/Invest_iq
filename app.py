@@ -25,6 +25,8 @@ if hasattr(sys.stderr, "reconfigure"):
     getattr(sys.stderr, "reconfigure")(encoding="utf-8")
 
 import requests
+from functools import wraps
+from flask_cors import CORS
 from flask import (
     Flask,
     Response,
@@ -95,9 +97,208 @@ app = Flask(__name__)
 _secret = os.environ.get("SECRET_KEY")
 if not _secret:
     if os.environ.get("FLASK_ENV") == "production":
-        logger.warning("SECURITY NOTICE: SECRET_KEY environment variable not set in production. Using fallback secret.")
-    _secret = "investiq-production-secret-9821389"
+        raise RuntimeError(
+            "CRITICAL SECURITY ERROR: 'SECRET_KEY' environment variable must be set in production mode. "
+            "Refusing to start without an explicit secret key."
+        )
+    logger.info("FLASK_ENV is not production; using development secret key.")
+    _secret = "investiq-development-secret-key-do-not-use-in-production"
 app.secret_key = _secret
+
+# Configure CORS: Explicitly allowlist local dev and production frontend origins (No wildcard "*")
+allowed_origins = ["http://127.0.0.1:3000", "http://localhost:3000"]
+custom_origins = os.environ.get("CORS_ALLOWED_ORIGINS") or os.environ.get("FRONTEND_URL")
+if custom_origins:
+    for o in custom_origins.split(","):
+        cleaned = o.strip().rstrip("/")
+        if cleaned and cleaned not in allowed_origins:
+            allowed_origins.append(cleaned)
+
+CORS(
+    app,
+    resources={r"/api/*": {"origins": allowed_origins}},
+    supports_credentials=True,
+)
+
+
+def require_agent_secret(f):
+    """
+    Middleware decorator protecting server-to-server agent endpoints.
+    Validates X-Agent-Service-Key header against AGENT_SERVICE_SECRET.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        expected_secret = os.environ.get("AGENT_SERVICE_SECRET", "").strip()
+        client_key = request.headers.get("X-Agent-Service-Key", "").strip()
+        if not expected_secret or client_key != expected_secret:
+            return jsonify({
+                "success": False,
+                "error": "Unauthorized: Invalid or missing X-Agent-Service-Key header."
+            }), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/api/agents/health", methods=["GET", "POST"])
+@require_agent_secret
+def agent_health_route():
+    """Health and connectivity check for Next.js -> Flask agent bridge."""
+    return jsonify({
+        "success": True,
+        "status": "healthy",
+        "service": "Invest IQ Agent Engine",
+        "timestamp": datetime.now().isoformat(),
+    }), 200
+
+
+@app.route("/api/agents/debrief", methods=["POST"])
+@require_agent_secret
+def agent_debrief_route():
+    """
+    POST /api/agents/debrief
+    Server-to-server endpoint for Post-Trade Debrief Agent.
+    Body: { user_id, trade_id }
+    """
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+    trade_id = data.get("trade_id")
+
+    if not user_id or not trade_id:
+        return jsonify({
+            "success": False,
+            "error": "Both 'user_id' and 'trade_id' are required.",
+        }), 400
+
+    from agents.debrief_agent import generate_debrief
+    result = generate_debrief(user_id=str(user_id), trade_id=str(trade_id))
+    status_code = 200 if result.get("success") else 404
+    return jsonify(result), status_code
+
+
+@app.route("/api/agents/watchdog-check", methods=["POST"])
+@require_agent_secret
+def agent_watchdog_check_route():
+    """
+    POST /api/agents/watchdog-check
+    Synchronous pre-trade behavioral guardrail check.
+    Body: { user_id, symbol, shares, type, price }
+    """
+    data = request.get_json() or {}
+    user_id = data.get("user_id") or data.get("userId")
+    symbol = data.get("symbol")
+    shares = data.get("shares")
+    trade_type = data.get("type", "BUY")
+    price = data.get("price")
+
+    if not user_id or not symbol or not shares:
+        return jsonify({
+            "success": False,
+            "error": "Fields 'user_id' (or 'userId'), 'symbol', and 'shares' are required.",
+        }), 400
+
+    try:
+        shares_int = int(shares)
+        price_float = float(price) if price is not None else None
+    except (ValueError, TypeError):
+        return jsonify({
+            "success": False,
+            "error": "Invalid shares or price format.",
+        }), 400
+
+    from agents.watchdog_agent import check_before_trade
+    result = check_before_trade(
+        user_id=str(user_id),
+        proposed_symbol=str(symbol),
+        proposed_size=shares_int,
+        proposed_type=str(trade_type),
+        proposed_price=price_float,
+    )
+    result["success"] = True
+    return jsonify(result), 200
+
+
+@app.route("/api/agents/curate", methods=["POST"])
+@require_agent_secret
+def agent_curate_route():
+    """
+    POST /api/agents/curate
+    Executes Watchlist Curator workflow.
+    Protected by shared secret (@require_agent_secret).
+    Body: { user_id?: str, userId?: str, batch?: bool, force_refresh?: bool }
+    """
+    data = request.get_json() or {}
+    batch = bool(data.get("batch", False))
+    force_refresh = bool(data.get("force_refresh", False))
+    user_id = data.get("user_id") or data.get("userId")
+
+    from agents.curator_agent import run_daily_curation, run_batch_curation
+
+    if batch:
+        result = run_batch_curation()
+        return jsonify(result), 200
+
+    if not user_id:
+        return jsonify({
+            "success": False,
+            "error": "Field 'user_id' (or 'userId') is required when batch is false.",
+        }), 400
+
+    result = run_daily_curation(user_id=str(user_id), force_refresh=force_refresh)
+    return jsonify(result), 200
+
+
+@app.route("/api/agents/research", methods=["POST"])
+@require_agent_secret
+def agent_research_route():
+    """
+    POST /api/agents/research
+    Executes interactive Research Agent inquiry.
+    Protected by shared secret (@require_agent_secret).
+    Body: { user_id?: str, userId?: str, question: str }
+    """
+    data = request.get_json() or {}
+    user_id = data.get("user_id") or data.get("userId")
+    question = data.get("question")
+
+    if not user_id:
+        return jsonify({
+            "success": False,
+            "error": "Field 'user_id' (or 'userId') is required.",
+        }), 400
+
+    if not question or not str(question).strip():
+        return jsonify({
+            "success": False,
+            "error": "Field 'question' is required and cannot be empty.",
+        }), 400
+
+    from agents.research_agent import answer_question
+    result = answer_question(user_id=str(user_id), question=str(question))
+    return jsonify(result), 200
+
+
+@app.route("/api/agents/next-lesson", methods=["POST"])
+@require_agent_secret
+def agent_next_lesson_route():
+    """
+    POST /api/agents/next-lesson
+    Recommends user's next curriculum lesson based on Watchdog behavioral flags and trade signals.
+    Protected by shared secret (@require_agent_secret).
+    Body: { user_id?: str, userId?: str }
+    """
+    data = request.get_json() or {}
+    user_id = data.get("user_id") or data.get("userId")
+
+    if not user_id:
+        return jsonify({
+            "success": False,
+            "error": "Field 'user_id' (or 'userId') is required.",
+        }), 400
+
+    from agents.lesson_agent import recommend_next_lesson
+    result = recommend_next_lesson(user_id=str(user_id))
+    return jsonify(result), 200
+
 
 
 @app.after_request

@@ -180,8 +180,10 @@ function TradeTerminalContent() {
     ],
   };
 
-  const handleExecute = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [watchdogWarning, setWatchdogWarning] = useState<string | null>(null);
+
+  const handleExecute = async (e?: React.FormEvent, bypassWarning: boolean = false) => {
+    if (e) e.preventDefault();
     if (numShares <= 0) return;
 
     const res = await executePaperTrade({
@@ -189,8 +191,15 @@ function TradeTerminalContent() {
       type: tradeType,
       shares: numShares,
       price: currentPrice,
+      confirmedWarning: bypassWarning,
     });
 
+    if (res.warning && res.requiresConfirmation && !bypassWarning) {
+      setWatchdogWarning(res.message);
+      return;
+    }
+
+    setWatchdogWarning(null);
     setMessage({ text: res.message, success: res.success });
     if (res.success) {
       try {
@@ -199,7 +208,7 @@ function TradeTerminalContent() {
         // Fallback
       }
     }
-    setTimeout(() => setMessage(null), 5000);
+    setTimeout(() => setMessage(null), 6000);
   };
 
   return (
@@ -582,6 +591,35 @@ function TradeTerminalContent() {
                 )}
               >
                 {message.text}
+              </div>
+            )}
+
+            {/* Watchdog Behavioral Warning Confirmation Banner */}
+            {watchdogWarning && (
+              <div className="p-3.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 space-y-2.5">
+                <div className="flex items-center gap-2 font-bold text-xs">
+                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+                  <span>Watchdog Behavioral Guardrail Notice</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed font-sans">
+                  {watchdogWarning}
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleExecute(undefined, true)}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-black transition shadow-sm"
+                  >
+                    Acknowledge & Proceed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWatchdogWarning(null)}
+                    className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition"
+                  >
+                    Cancel Order
+                  </button>
+                </div>
               </div>
             )}
 

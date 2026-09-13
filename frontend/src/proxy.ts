@@ -29,9 +29,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. Allow public auth APIs
-  const isAuthApi = pathname.startsWith("/api/auth/");
-  if (isAuthApi) {
+  // 3. Allow public auth APIs and agent bridge APIs (which enforce their own auth)
+  const isExcludedApi =
+    pathname.startsWith("/api/auth/") || pathname.startsWith("/api/agents/");
+  if (isExcludedApi) {
     return NextResponse.next();
   }
 

@@ -97,6 +97,29 @@ const PILLARS = [
 ];
 
 export default function LearnOverviewPage() {
+  const [recommendedLesson, setRecommendedLesson] = React.useState<{
+    recommended_lesson_id: string;
+    lesson_title: string;
+    tier_id: number;
+    tier_title: string;
+    pattern_type: string;
+    trigger_source: string;
+    rationale: string;
+    nudge_message: string;
+    has_active_flag: boolean;
+  } | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/agents/next-lesson")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success && data.recommended_lesson_id) {
+          setRecommendedLesson(data);
+        }
+      })
+      .catch((err) => console.debug("Error fetching next lesson on overview:", err));
+  }, []);
+
   return (
     <div className="space-y-8 pb-16 max-w-6xl mx-auto">
       {/* Hero Section */}
@@ -133,6 +156,47 @@ export default function LearnOverviewPage() {
           </div>
         </div>
       </div>
+
+      {/* Pinned Adaptive Lesson Recommendation */}
+      {recommendedLesson && (
+        <div className="fintech-card p-5 sm:p-6 border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent relative overflow-hidden space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="p-1 rounded-md bg-primary/20 text-primary">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                Personalized Learning Focus
+              </span>
+              {recommendedLesson.has_active_flag && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20">
+                  {recommendedLesson.trigger_source === "watchdog" ? "Behavioral Guardrail" : "Setup Debrief Focus"}
+                </span>
+              )}
+            </div>
+
+            <Link
+              href={`/learn/tutorials?topic=${recommendedLesson.recommended_lesson_id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-all shadow-sm self-start sm:self-auto"
+            >
+              <span>Study {recommendedLesson.lesson_title}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-sm sm:text-base font-bold text-foreground">
+              {recommendedLesson.lesson_title}{" "}
+              <span className="text-xs text-muted-foreground font-normal">
+                ({recommendedLesson.tier_title})
+              </span>
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-4xl">
+              {recommendedLesson.nudge_message}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Core Tracks Grid */}
       <div className="space-y-4">

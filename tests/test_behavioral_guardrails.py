@@ -64,10 +64,16 @@ class TestBehavioralGuardrails(unittest.TestCase):
         self.assertFalse(attempt["success"])
         self.assertIn("cooldown", attempt["error"].lower())
 
+        # SELL order succeeds even while cooldown is active (users can always exit positions)
+        self.portfolio.positions["INFY.NS"] = {"quantity": 10, "avg_price": 1500.0, "total_cost": 15000.0}
+        sell_attempt = self.portfolio.sell("INFY.NS", quantity=5, price=1450.0)
+        self.assertTrue(sell_attempt["success"])
+
         # Submitting reflection still respects cooldown timer
         reflect_res = self.portfolio.submit_reflection(2, "Thesis 2", "Loss 2", "Lesson 2")
         self.assertFalse(reflect_res["is_unlocked"])  # Still cooling down!
         print(f"\n[Verified] Loss streak cooldown active: {sec_left}s remaining. Impulse trading prevented.")
+        print("[Verified] SELL order executed successfully during active cooldown.")
 
     def test_winning_trade_resets_loss_streak(self):
         # Incur 1 loss

@@ -84,7 +84,14 @@ interface SimulatorContextType {
     type: "BUY" | "SELL";
     shares: number;
     price?: number;
-  }) => Promise<{ success: boolean; message: string }>;
+    confirmedWarning?: boolean;
+  }) => Promise<{
+    success: boolean;
+    message: string;
+    warning?: boolean;
+    blocked?: boolean;
+    requiresConfirmation?: boolean;
+  }>;
 }
 
 const SimulatorContext = createContext<SimulatorContextType | undefined>(undefined);
@@ -190,6 +197,33 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
             setTrades(mappedTrades);
           }
         }
+      }
+
+      // Load active Watchlist Curator suggestions for today
+      try {
+        const curateRes = await fetch("/api/agents/curate");
+        if (curateRes.ok) {
+          const curateData = await curateRes.json();
+          if (curateData.success && Array.isArray(curateData.suggestions)) {
+            const curatorNotifs: NotificationItem[] = curateData.suggestions.map((s: any, idx: number) => ({
+              id: `curator-${s.symbol.toLowerCase()}-${idx}`,
+              title: `Curator Pick: ${s.symbol} — ${s.setup_title || "Technical Setup"}`,
+              message: s.reason,
+              time: "Today",
+              type: "signal" as const,
+              read: false,
+              symbol: s.symbol,
+            }));
+
+            setNotifications((prev) => {
+              const existingIds = new Set(prev.map((n) => n.id));
+              const newItems = curatorNotifs.filter((n) => !existingIds.has(n.id));
+              return [...newItems, ...prev];
+            });
+          }
+        }
+      } catch (curateErr) {
+        console.debug("Curator suggestions fetch notice:", curateErr);
       }
     } catch (err) {
       console.error("Failed to load user portfolio:", err);
@@ -302,17 +336,25 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
     symbol,
     type,
     shares,
+    confirmedWarning,
   }: {
     symbol: string;
     type: "BUY" | "SELL";
     shares: number;
     price?: number;
-  }): Promise<{ success: boolean; message: string }> => {
+    confirmedWarning?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    warning?: boolean;
+    blocked?: boolean;
+    requiresConfirmation?: boolean;
+  }> => {
     try {
       const res = await fetch("/api/user/trade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, type, shares }),
+        body: JSON.stringify({ symbol, type, shares, confirmedWarning }),
       });
 
       const contentType = res.headers.get("content-type") || "";
@@ -324,6 +366,26 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await res.json();
+
+      // Check if Watchdog flagged a warning requiring confirmation
+      if (data.warning && data.requiresConfirmation) {
+        return {
+          success: false,
+          warning: true,
+          requiresConfirmation: true,
+          message: data.message || "Watchdog behavioral notice.",
+        };
+      }
+
+      // Check if Watchdog or RPC blocked execution
+      if (data.blocked || res.status === 403) {
+        return {
+          success: false,
+          blocked: true,
+          message: data.message || "Trade blocked by Watchdog behavioral guardrails.",
+        };
+      }
+
       if (!res.ok || !data.success) {
         return {
           success: false,
@@ -331,18 +393,51 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Add to notifications
+      // Add initial trade fill to notifications
       setNotifications((prev) => [
         {
           id: `trade-${Date.now()}`,
           title: `Paper ${type} Executed`,
-          message: `${type === "BUY" ? "Bought" : "Sold"} ${shares} ${symbol} @ $${data.livePrice?.toFixed(2)} (Real Market Price)`,
+          message: `${type === "BUY" ? "Bought" : "Sold"} ${shares} ${symbol} @ ₹${data.livePrice?.toFixed(2)} (Real Market Price)`,
           time: "Just now",
           read: false,
           type: "trade",
+          symbol: symbol,
         },
         ...prev,
       ]);
+
+      // Trigger Post-Trade Debrief Agent (Only on position exit / SELL with realized P&L)
+      const tradeId = data.trade?.id;
+      if (type === "SELL" && tradeId) {
+        void fetch("/api/agents/debrief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tradeId }),
+        })
+          .then(async (debriefRes) => {
+            if (debriefRes.ok) {
+              const debriefData = await debriefRes.json();
+              if (debriefData && debriefData.success) {
+                setNotifications((prev) => [
+                  {
+                    id: `debrief-${Date.now()}-${tradeId}`,
+                    title: debriefData.title || `AI Post-Trade Debrief: ${symbol}`,
+                    message: `${debriefData.summary} Lesson: ${debriefData.lesson || ""}`,
+                    time: "Just now",
+                    read: false,
+                    type: "trade",
+                    symbol: symbol,
+                  },
+                  ...prev,
+                ]);
+              }
+            }
+          })
+          .catch((err) => {
+            console.warn("Post-trade debrief call non-critical error:", err);
+          });
+      }
 
       // Refresh portfolio to reflect latest database state & live prices
       await refreshPortfolio();
