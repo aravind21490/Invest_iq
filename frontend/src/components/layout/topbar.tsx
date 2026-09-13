@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSimulator } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 interface TopbarProps {
   onOpenCommandPalette: () => void;
@@ -22,7 +23,7 @@ interface TopbarProps {
 export function Topbar({ onOpenCommandPalette, onToggleSidebar }: TopbarProps) {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
-  const { unreadCount, setNotificationsOpen } = useSimulator();
+  const { unreadCount, setNotificationsOpen, isCuratorLoading } = useSimulator();
   const [mounted, setMounted] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
 
@@ -43,20 +44,25 @@ export function Topbar({ onOpenCommandPalette, onToggleSidebar }: TopbarProps) {
     if (pathname === "/analytics") return "Analytics";
     if (pathname === "/learn/signals") return "AI Signals";
     if (pathname === "/learn/tutorials") return "Learn";
+    if (pathname === "/learn/insights") return "Insights";
+    if (pathname === "/learn") return "Academy";
+    if (pathname === "/research") return "AI Research";
+    if (pathname === "/markets") return "Market Overview";
     if (pathname === "/settings") return "Settings";
     if (pathname === "/leaderboard") return "Leaderboard";
     if (pathname === "/signin") return "Sign In";
     if (pathname === "/signup") return "Sign Up";
-    return "Dashboard";
+    return "Simulator";
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/85 backdrop-blur-md px-4 sm:px-6">
-      {/* Left: Sidebar Collapse Toggle & Page Title */}
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-4 sm:px-6 transition-all">
+      {/* Left: Mobile Sidebar Trigger & Breadcrumb */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer md:hidden"
+          aria-label="Toggle Navigation Menu"
           title="Toggle Sidebar"
         >
           <PanelLeft className="h-4 w-4" />
@@ -97,15 +103,20 @@ export function Topbar({ onOpenCommandPalette, onToggleSidebar }: TopbarProps) {
         <button
           onClick={() => setNotificationsOpen(true)}
           className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-          title={`View Alerts (${unreadCount} unread)`}
+          title={isCuratorLoading ? "Syncing AI alerts & setups..." : `View Alerts (${unreadCount} unread)`}
           aria-label="View Alerts & Signals"
         >
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
+          <Bell className={cn("h-4 w-4", isCuratorLoading && unreadCount === 0 && "animate-pulse text-violet-400")} />
+          {unreadCount > 0 ? (
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-xs">
               {unreadCount}
             </span>
-          )}
+          ) : isCuratorLoading ? (
+            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2" title="Syncing AI alerts">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+            </span>
+          ) : null}
         </button>
 
         {/* Theme Toggle icon */}

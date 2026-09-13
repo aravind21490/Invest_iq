@@ -31,6 +31,7 @@ export function NotificationsDrawer() {
     addNotification,
     watchlist,
     toggleWatchlist,
+    isCuratorLoading,
   } = useSimulator();
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
@@ -218,7 +219,27 @@ export function NotificationsDrawer() {
 
         {/* Notifications List */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5">
-          {filteredNotifications.length === 0 ? (
+          {isCuratorLoading && filteredNotifications.length === 0 ? (
+            <div className="p-4 space-y-3 animate-pulse">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pb-1">
+                <Sparkles className="h-3.5 w-3.5 text-violet-400 animate-spin" />
+                <span>Syncing live AI Curator signals & alerts...</span>
+              </div>
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="p-3.5 rounded-xl border border-border/60 bg-card/40 space-y-2"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="h-3.5 w-24 bg-violet-500/15 rounded" />
+                    <div className="h-2.5 w-12 bg-muted rounded" />
+                  </div>
+                  <div className="h-3 w-40 bg-muted rounded" />
+                  <div className="h-2.5 w-full bg-muted/60 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center text-center p-6 space-y-3">
               <div className="h-12 w-12 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground border border-border">
                 <Bell className="h-6 w-6 opacity-40" />

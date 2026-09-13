@@ -87,6 +87,8 @@ interface SimulatorContextType {
   lockReason: string;
   lossStreak: number;
   curatorSuggestions: any[];
+  isCuratorLoading: boolean;
+  refreshCurator: () => Promise<void>;
   latestDebrief: {
     tradeId: string;
     symbol: string;
@@ -162,6 +164,7 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
   const [lockReason, setLockReason] = useState<string>("");
   const [lossStreak, setLossStreak] = useState<number>(0);
   const [curatorSuggestions, setCuratorSuggestions] = useState<any[]>([]);
+  const [isCuratorLoading, setIsCuratorLoading] = useState<boolean>(false);
   const [latestDebrief, setLatestDebrief] = useState<{
     tradeId: string;
     symbol: string;
@@ -199,6 +202,39 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
+  // Load active Watchlist Curator suggestions asynchronously in background (Non-blocking)
+  const refreshCurator = useCallback(async () => {
+    setIsCuratorLoading(true);
+    try {
+      const curateRes = await fetch("/api/agents/curate");
+      if (curateRes.ok) {
+        const curateData = await curateRes.json();
+        if (curateData.success && Array.isArray(curateData.suggestions)) {
+          setCuratorSuggestions(curateData.suggestions);
+          const curatorNotifs: NotificationItem[] = curateData.suggestions.map((s: any, idx: number) => ({
+            id: `curator-${s.symbol.toLowerCase()}-${idx}`,
+            title: `Curator Pick: ${s.symbol} — ${s.setup_title || "Technical Setup"}`,
+            message: s.reason,
+            time: "Today",
+            type: "signal" as const,
+            read: false,
+            symbol: s.symbol,
+          }));
+
+          setNotifications((prev) => {
+            const existingIds = new Set(prev.map((n) => n.id));
+            const newItems = curatorNotifs.filter((n) => !existingIds.has(n.id));
+            return [...newItems, ...prev];
+          });
+        }
+      }
+    } catch (curateErr) {
+      console.debug("Curator suggestions fetch notice:", curateErr);
+    } finally {
+      setIsCuratorLoading(false);
+    }
   }, []);
 
   // Load authenticated user and real portfolio from backend DB
@@ -267,40 +303,15 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
           }
         }
       }
-
-      // Load active Watchlist Curator suggestions for today
-      try {
-        const curateRes = await fetch("/api/agents/curate");
-        if (curateRes.ok) {
-          const curateData = await curateRes.json();
-          if (curateData.success && Array.isArray(curateData.suggestions)) {
-            setCuratorSuggestions(curateData.suggestions);
-            const curatorNotifs: NotificationItem[] = curateData.suggestions.map((s: any, idx: number) => ({
-              id: `curator-${s.symbol.toLowerCase()}-${idx}`,
-              title: `Curator Pick: ${s.symbol} — ${s.setup_title || "Technical Setup"}`,
-              message: s.reason,
-              time: "Today",
-              type: "signal" as const,
-              read: false,
-              symbol: s.symbol,
-            }));
-
-            setNotifications((prev) => {
-              const existingIds = new Set(prev.map((n) => n.id));
-              const newItems = curatorNotifs.filter((n) => !existingIds.has(n.id));
-              return [...newItems, ...prev];
-            });
-          }
-        }
-      } catch (curateErr) {
-        console.debug("Curator suggestions fetch notice:", curateErr);
-      }
     } catch (err) {
       console.error("Failed to load user portfolio:", err);
     } finally {
+      // 1. Immediately dismiss portal Security Gate so user enters dashboard instantly!
       setIsLoading(false);
+      // 2. Fire Curator suggestions in background — non-blocking!
+      void refreshCurator();
     }
-  }, []);
+  }, [refreshCurator]);
 
   useEffect(() => {
     let isMounted = true;
@@ -573,6 +584,8 @@ export function SimulatorProvider({ children }: { children: React.ReactNode }) {
         lockReason,
         lossStreak,
         curatorSuggestions,
+        isCuratorLoading,
+        refreshCurator,
         latestDebrief,
         debriefsByTradeId,
       }}

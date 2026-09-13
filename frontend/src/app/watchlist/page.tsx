@@ -23,12 +23,26 @@ interface CuratorSuggestion {
 }
 
 export default function WatchlistPage() {
-  const { watchlist, toggleWatchlist, currency } = useSimulator();
+  const {
+    watchlist,
+    toggleWatchlist,
+    currency,
+    curatorSuggestions,
+    isCuratorLoading,
+  } = useSimulator();
   const [filter, setFilter] = useState<"ALL" | "GAINERS" | "LOSERS">("ALL");
   const [curatorPicks, setCuratorPicks] = useState<CuratorSuggestion[]>([]);
 
+  // Sync with store's curator suggestions if available
+  useEffect(() => {
+    if (curatorSuggestions && curatorSuggestions.length > 0) {
+      setCuratorPicks(curatorSuggestions);
+    }
+  }, [curatorSuggestions]);
+
   // CRITICAL REQUIREMENT: Pure GET read only; never triggers run_daily_curation or consumes user's quota
   useEffect(() => {
+    if (curatorSuggestions && curatorSuggestions.length > 0) return;
     fetch("/api/agents/curate", { method: "GET" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -37,7 +51,8 @@ export default function WatchlistPage() {
         }
       })
       .catch((err) => console.debug("Watchlist curator GET fetch notice:", err));
-  }, []);
+  }, [curatorSuggestions]);
+
 
   const watchlistTickers = Object.values(TICKERS).filter((t) =>
     watchlist.includes(t.symbol)
@@ -81,8 +96,47 @@ export default function WatchlistPage() {
         </div>
       </div>
 
+      {/* Curator Agent Curated Opportunities Shelf (Loading Skeleton) */}
+      {isCuratorLoading && curatorPicks.length === 0 && (
+        <div className="fintech-card p-5 space-y-3.5 border-violet-500/20 bg-gradient-to-br from-card via-card to-violet-950/10 animate-pulse">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 animate-spin text-violet-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="h-3.5 w-36 bg-violet-500/20 rounded" />
+                <div className="h-2.5 w-56 bg-muted/60 rounded" />
+              </div>
+            </div>
+            <span className="text-[10px] text-muted-foreground/60 font-mono hidden sm:inline">
+              Curator AI scanning momentum setups...
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-3.5 rounded-xl border border-border/60 bg-card/40 space-y-2 h-28 flex flex-col justify-between"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="h-4 w-16 bg-muted rounded" />
+                  <div className="h-3.5 w-24 bg-violet-500/10 rounded" />
+                </div>
+                <div className="space-y-1">
+                  <div className="h-2.5 w-full bg-muted/60 rounded" />
+                  <div className="h-2.5 w-3/4 bg-muted/40 rounded" />
+                </div>
+                <div className="h-3 w-20 bg-muted/50 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Curator Agent Curated Opportunities Shelf */}
       {curatorPicks.length > 0 && (
+
         <div className="fintech-card p-5 space-y-3.5 border-violet-500/30 bg-gradient-to-br from-card via-card to-violet-950/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
