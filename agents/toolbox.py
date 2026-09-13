@@ -175,11 +175,14 @@ def get_indicators(symbol: str, as_of_date: Optional[str] = None) -> Dict[str, A
     if not snapshot:
         return {"symbol": sym, "error": "Indicator computation failed", "snapshot": {}}
 
+    source = getattr(df, "attrs", {}).get("source", "live")
     return {
         "symbol": sym,
         "as_of_date": snapshot.get("date"),
         "price": snapshot.get("close"),
         "snapshot": snapshot,
+        "source": source,
+        "is_simulated": (source == "fallback_synthetic"),
     }
 
 
@@ -212,6 +215,7 @@ def get_signals(symbol: str, as_of_date: Optional[str] = None) -> Dict[str, Any]
             logger.warning("Could not parse as_of_date '%s': %s", as_of_date, e)
 
     analysis = default_scanner.analyze_stock(sym, df=df)
+    source = getattr(df, "attrs", {}).get("source", "live")
     return {
         "symbol": sym,
         "name": analysis.get("name", sym),
@@ -221,6 +225,8 @@ def get_signals(symbol: str, as_of_date: Optional[str] = None) -> Dict[str, Any]
         "signals": analysis.get("signals", []),
         "primary_signal": analysis.get("primary_signal", {}),
         "snapshot": analysis.get("snapshot", {}),
+        "source": source,
+        "is_simulated": (source == "fallback_synthetic"),
     }
 
 

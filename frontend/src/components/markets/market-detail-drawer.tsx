@@ -36,6 +36,7 @@ export function MarketDetailDrawer({
   const [range, setRange] = useState<"1d" | "5d" | "1mo" | "1y">("1mo");
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [isLoadingChart, setIsLoadingChart] = useState(false);
+  const [isChartSimulated, setIsChartSimulated] = useState<boolean>(false);
 
   useEffect(() => {
     if (!quote || !isOpen) return;
@@ -54,6 +55,9 @@ export function MarketDetailDrawer({
       .then((data) => {
         if (isMounted && data && data.success && data.points) {
           setChartData(data.points);
+          if (typeof data.isSimulated === "boolean") {
+            setIsChartSimulated(data.isSimulated);
+          }
         }
       })
       .catch((err) => console.error("Error loading chart:", err))
@@ -69,6 +73,7 @@ export function MarketDetailDrawer({
 
   if (!isOpen || !quote) return null;
 
+  const isSimulated = Boolean(quote.isSimulated || isChartSimulated || quote.dataSource === "synthetic");
   const isPositive = quote.change >= 0;
   const strokeColor = isPositive ? "#10b981" : "#ef4444";
   const curr = quote.currency || (quote.symbol.endsWith(".NS") ? "INR" : "USD");
@@ -119,9 +124,28 @@ export function MarketDetailDrawer({
           {/* Price & Change Banner */}
           <div className="flex items-baseline justify-between p-4 rounded-xl bg-secondary/50 border border-border">
             <div>
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-0.5">
-                Live Real-Time Price
-              </span>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  {isSimulated ? "Simulated Educational Price" : "Live Real-Time Price"}
+                </span>
+                {isSimulated ? (
+                  <span
+                    className="rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-bold px-1.5 py-0.2 flex items-center gap-1"
+                    title="Live market feed unreachable. Displaying algorithmic simulated price action."
+                  >
+                    <span className="h-1 w-1 rounded-full bg-amber-400" />
+                    Simulated
+                  </span>
+                ) : (
+                  <span
+                    className="rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-1.5 py-0.2 flex items-center gap-1"
+                    title="Connected to real-time market data feed."
+                  >
+                    <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
+                    Live
+                  </span>
+                )}
+              </div>
               <div className="text-3xl font-extrabold text-foreground font-mono tracking-tight">
                 {quote.symbol.startsWith("^")
                   ? quote.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
@@ -340,7 +364,15 @@ export function MarketDetailDrawer({
           <div className="p-3 rounded-lg bg-muted/30 border border-border text-[11px] text-muted-foreground flex items-start gap-2">
             <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
             <span>
-              Invest IQ is a paper-trading educational simulator. Real-time market prices are sourced directly for realistic learning, but all executions use virtual simulated money.
+              {isSimulated ? (
+                <>
+                  <strong className="text-amber-400">Simulated Price Model:</strong> Live exchange data is currently unreachable. Prices, charts, and technical indicators are computed using Invest IQ&apos;s realistic educational simulation model. Paper trading executions remain 100% simulated.
+                </>
+              ) : (
+                <>
+                  Invest IQ is a paper-trading educational simulator. Real-time market prices are sourced directly for realistic learning, but all executions use virtual simulated money.
+                </>
+              )}
             </span>
           </div>
         </div>

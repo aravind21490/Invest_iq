@@ -14,14 +14,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const points = await fetchHistoricalChart(symbol, range);
+    const simulate401 = searchParams.get("simulate401") === "true";
+    const chartData = await fetchHistoricalChart(symbol, range, simulate401);
 
     return NextResponse.json(
       {
         success: true,
         symbol,
         range,
-        points,
+        points: chartData.points,
+        isSimulated: chartData.isSimulated,
       },
       {
         status: 200,

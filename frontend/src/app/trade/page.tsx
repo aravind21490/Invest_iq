@@ -69,6 +69,7 @@ function TradeTerminalContent() {
     dayLow: number;
     volume: number;
     sector: string;
+    isSimulated?: boolean;
   }>({
     price: 1274.0,
     change: 12.4,
@@ -78,12 +79,15 @@ function TradeTerminalContent() {
     dayLow: 1262.0,
     volume: 3400000,
     sector: "Energy & Conglomerate",
+    isSimulated: false,
   });
+  const [isChartSimulated, setIsChartSimulated] = useState<boolean>(false);
 
   // Fetch live real-time quote
   const fetchQuote = useCallback(async (sym: string) => {
     try {
-      const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(sym)}`);
+      const isSim401 = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("simulate401") === "true";
+      const res = await fetch(`/api/market/quotes?symbols=${encodeURIComponent(sym)}${isSim401 ? "&simulate401=true" : ""}`);
       if (res.ok) {
         const data = await res.json();
         const q = data.quotes?.[0];
@@ -97,6 +101,7 @@ function TradeTerminalContent() {
             dayLow: q.dayLow,
             volume: q.volume,
             sector: q.sector || "Equities",
+            isSimulated: q.isSimulated,
           });
         }
       }
@@ -109,11 +114,15 @@ function TradeTerminalContent() {
   const fetchChart = useCallback(async (sym: string, range: "1d" | "5d" | "1mo" | "1y") => {
     setIsChartLoading(true);
     try {
-      const res = await fetch(`/api/market/chart?symbol=${encodeURIComponent(sym)}&range=${range}`);
+      const isSim401 = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("simulate401") === "true";
+      const res = await fetch(`/api/market/chart?symbol=${encodeURIComponent(sym)}&range=${range}${isSim401 ? "&simulate401=true" : ""}`);
       if (res.ok) {
         const data = await res.json();
         if (data.points && Array.isArray(data.points)) {
           setChartPoints(data.points);
+          if (typeof data.isSimulated === "boolean") {
+            setIsChartSimulated(data.isSimulated);
+          }
         }
       }
     } catch (e) {
@@ -264,10 +273,20 @@ function TradeTerminalContent() {
                   ({liveQuote.change >= 0 ? "+" : ""}{formatCurrency(liveQuote.change, "INR")})
                 </span>
               </div>
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live 15s (NSE)
-              </span>
+              {liveQuote.isSimulated || isChartSimulated ? (
+                <span
+                  className="text-[11px] text-amber-400 flex items-center gap-1 font-semibold"
+                  title="Live exchange feed unreachable. Displaying educational simulated data."
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  Simulated Market Feed
+                </span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live 15s (NSE)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -341,10 +360,20 @@ function TradeTerminalContent() {
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Interactive Live Price Chart (₹)
                 </span>
-                <span className="rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-1.5 py-0.5 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Stream
-                </span>
+                {liveQuote.isSimulated || isChartSimulated ? (
+                  <span
+                    className="rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 flex items-center gap-1"
+                    title="Live exchange feed unreachable. Displaying educational simulated data."
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Simulated Market Feed
+                  </span>
+                ) : (
+                  <span className="rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-1.5 py-0.5 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Stream
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-medium">
                 {(["1d", "5d", "1mo", "1y"] as const).map((tf) => (

@@ -303,20 +303,44 @@ export default function MarketsPage() {
     return liveIndices.length >= 2 ? liveIndices.slice(0, 4) : defaultIndices;
   }, [quotes]);
 
+  const isAnySimulated = useMemo(() => {
+    if (quotes.length === 0) return false;
+    return quotes.some((q) => q.isSimulated || q.dataSource === "synthetic");
+  }, [quotes]);
+
   return (
     <div className="space-y-6 pb-16">
       {/* Top Banner & Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Activity className="h-4 w-4" />
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                Live {refreshIntervalSec}s Stream • Up to Seconds
+            {isAnySimulated ? (
+              <span
+                className="p-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                title="Live exchange feed unreachable. Displaying educational simulated data."
+              >
+                <Activity className="h-4 w-4" />
               </span>
+            ) : (
+              <span className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Activity className="h-4 w-4" />
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              {isAnySimulated ? (
+                <span
+                  className="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5"
+                  title="Live exchange feed unreachable. Displaying educational simulated data."
+                >
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Simulated Market Feed • Educational Model
+                </span>
+              ) : (
+                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                  Live {refreshIntervalSec}s Stream • Up to Seconds
+                </span>
+              )}
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border font-mono">
                 {totalCatalogCount.toLocaleString()}+ Total Securities
               </span>
@@ -329,7 +353,15 @@ export default function MarketsPage() {
             </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Real-time streaming quotes for all 2,298+ Indian NSE stocks (₹) &amp; premier Global / US market titans ($) updated live every {refreshIntervalSec} seconds.
+            {isAnySimulated ? (
+              <>
+                Live exchange feeds are currently unreachable. Displaying high-fidelity algorithmic simulated price action for safe educational practice.
+              </>
+            ) : (
+              <>
+                Real-time streaming quotes for all 2,298+ Indian NSE stocks (₹) &amp; premier Global / US market titans ($) updated live every {refreshIntervalSec} seconds.
+              </>
+            )}
           </p>
         </div>
 
@@ -588,7 +620,7 @@ export default function MarketsPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   <th className="py-3.5 px-4">Market &amp; Asset</th>
-                  <th className="py-3.5 px-4 text-right">Live Price</th>
+                  <th className="py-3.5 px-4 text-right">{isAnySimulated ? "Simulated Price" : "Live Price"}</th>
                   <th className="py-3.5 px-4 text-right">24H Movement</th>
                   <th className="py-3.5 px-4 text-right">Day Range</th>
                   <th className="py-3.5 px-4 text-right">52W Range</th>
@@ -647,6 +679,14 @@ export default function MarketsPage() {
                               >
                                 {curr === "USD" ? (q.symbol.startsWith("^") ? "INDEX" : "US:GLOBAL") : "NSE:EQ"}
                               </span>
+                              {(q.isSimulated || q.dataSource === "synthetic") && (
+                                <span
+                                  className="text-[9px] px-1 py-0.2 rounded font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                  title="Simulated educational price model"
+                                >
+                                  SIM
+                                </span>
+                              )}
                             </div>
                             <span className="text-[11px] text-muted-foreground truncate block max-w-[200px]">
                               {q.name}
@@ -836,6 +876,14 @@ export default function MarketsPage() {
                           >
                             {curr === "USD" ? "US:GLOBAL" : "NSE:EQ"}
                           </span>
+                          {(q.isSimulated || q.dataSource === "synthetic") && (
+                            <span
+                              className="text-[9px] px-1 py-0.2 rounded font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                              title="Simulated educational price model"
+                            >
+                              SIM
+                            </span>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground truncate block max-w-[170px]">
                           {q.name}

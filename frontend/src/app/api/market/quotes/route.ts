@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    let quotes = await fetchMultipleQuotes(symbols);
+    const simulate401 = searchParams.get("simulate401") === "true";
+    let quotes = await fetchMultipleQuotes(symbols, simulate401);
 
     if (quotes.length === 0) {
       quotes = symbols.map((sym) => {

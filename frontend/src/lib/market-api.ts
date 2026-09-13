@@ -23,6 +23,8 @@ export interface MarketQuote {
   market?: "NSE" | "GLOBAL" | "INDEX";
   currency?: "INR" | "USD";
   updatedAt: string;
+  isSimulated?: boolean;
+  dataSource?: "live" | "cached" | "synthetic";
 }
 
 export interface ChartPoint {
@@ -33,6 +35,11 @@ export interface ChartPoint {
   high: number;
   low: number;
   volume: number;
+}
+
+export interface ChartResult {
+  points: ChartPoint[];
+  isSimulated: boolean;
 }
 
 // Global & Indian catalog presets for benchmark indices
@@ -69,12 +76,12 @@ interface CacheEntry {
 const quoteCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 2 * 1000; // 2 seconds TTL
 
-export async function fetchLiveQuote(rawSymbol: string): Promise<MarketQuote | null> {
+export async function fetchLiveQuote(rawSymbol: string, force401: boolean = false): Promise<MarketQuote | null> {
   const symbol = normalizeSymbol(rawSymbol);
   const cached = quoteCache.get(symbol);
   const now = Date.now();
 
-  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+  if (!force401 && cached && now - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
@@ -98,6 +105,10 @@ export async function fetchLiveQuote(rawSymbol: string): Promise<MarketQuote | n
   const category = (unifiedInfo?.category ||
     nseInfo?.category ||
     (symbol.startsWith("^") ? "index" : isGlobal ? "tech" : "large-cap")) as MarketQuote["category"];
+
+  if (force401) {
+    return generateFallbackQuote(symbol, name, sector, category, market, currency);
+  }
 
   try {
     const controller = new AbortController();
@@ -166,6 +177,8 @@ export async function fetchLiveQuote(rawSymbol: string): Promise<MarketQuote | n
       market,
       currency,
       updatedAt: new Date().toISOString(),
+      isSimulated: false,
+      dataSource: "live",
     };
 
     quoteCache.set(symbol, { data: quote, timestamp: now });
@@ -281,20 +294,26 @@ export function generateFallbackQuote(
     market,
     currency,
     updatedAt: new Date().toISOString(),
+    isSimulated: true,
+    dataSource: "synthetic",
   };
 }
 
-export async function fetchMultipleQuotes(symbols: string[]): Promise<MarketQuote[]> {
-  const promises = symbols.map((s) => fetchLiveQuote(s));
+export async function fetchMultipleQuotes(symbols: string[], force401: boolean = false): Promise<MarketQuote[]> {
+  const promises = symbols.map((s) => fetchLiveQuote(s, force401));
   const results = await Promise.all(promises);
   return results.filter((q): q is MarketQuote => q !== null);
 }
 
 export async function fetchHistoricalChart(
   rawSymbol: string,
-  range: "1d" | "5d" | "1mo" | "1y" = "1mo"
-): Promise<ChartPoint[]> {
+  range: "1d" | "5d" | "1mo" | "1y" = "1mo",
+  force401: boolean = false
+): Promise<ChartResult> {
   const symbol = normalizeSymbol(rawSymbol);
+  if (force401) {
+    return { points: generateFallbackChart(symbol, range), isSimulated: true };
+  }
   const intervalMap: Record<string, string> = {
     "1d": "5m",
     "5d": "15m",
@@ -321,19 +340,19 @@ export async function fetchHistoricalChart(
     }).finally(() => clearTimeout(timeoutId));
 
     if (!res.ok) {
-      return generateFallbackChart(symbol, range);
+      return { points: generateFallbackChart(symbol, range), isSimulated: true };
     }
 
     const data = await res.json();
     const result = data?.chart?.result?.[0];
     if (!result) {
-      return generateFallbackChart(symbol, range);
+      return { points: generateFallbackChart(symbol, range), isSimulated: true };
     }
 
     const timestamps: number[] = result.timestamp || [];
     const quote = result.indicators?.quote?.[0];
     if (!quote || !timestamps.length) {
-      return generateFallbackChart(symbol, range);
+      return { points: generateFallbackChart(symbol, range), isSimulated: true };
     }
 
     const points: ChartPoint[] = [];
@@ -355,10 +374,13 @@ export async function fetchHistoricalChart(
         });
       }
     }
-    return points.length > 0 ? points : generateFallbackChart(symbol, range);
+    if (points.length > 0) {
+      return { points, isSimulated: false };
+    }
+    return { points: generateFallbackChart(symbol, range), isSimulated: true };
   } catch (err) {
     console.warn(`Failed to fetch chart for ${symbol}:`, err);
-    return generateFallbackChart(symbol, range);
+    return { points: generateFallbackChart(symbol, range), isSimulated: true };
   }
 }
 

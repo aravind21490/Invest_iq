@@ -114,6 +114,22 @@ def answer_question(user_id: str, question: str) -> Dict[str, Any]:
 
     # Ensure educational disclaimer is always present whenever stocks, trades, or win-rates are discussed
     final_answer = raw_content.strip()
+
+    # Check if any tool returned fallback synthetic market data
+    tool_trace = agent_res.get("tool_trace") or []
+    has_fallback_synthetic = False
+    for step in tool_trace:
+        res = step.get("result")
+        if isinstance(res, dict):
+            if res.get("source") == "fallback_synthetic" or res.get("is_simulated") is True:
+                has_fallback_synthetic = True
+                break
+
+    if has_fallback_synthetic:
+        synthetic_caveat = "Note: Live exchange feed was temporarily unreachable; technical metrics reflect educational synthetic price action."
+        if synthetic_caveat not in final_answer:
+            final_answer = f"{final_answer}\n\n*{synthetic_caveat}*"
+
     if "SIMULATION ONLY" not in final_answer:
         final_answer = f"{final_answer}\n\n{EDUCATIONAL_DISCLAIMER}"
 

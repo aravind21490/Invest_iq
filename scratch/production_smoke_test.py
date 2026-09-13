@@ -27,12 +27,17 @@ import urllib.request
 import urllib.error
 from typing import Dict, Any, Tuple
 
+if hasattr(sys.stdout, "reconfigure"):
+    getattr(sys.stdout, "reconfigure")(encoding="utf-8")
+
+
 
 def make_request(
     url: str,
     method: str = "GET",
     data: Dict[str, Any] = None,
     cookie: str = "",
+    bypass: str = "",
     timeout: int = 90,
 ) -> Tuple[int, Dict[str, Any]]:
     """Execute HTTP request with session cookie and return status code and JSON payload."""
@@ -40,10 +45,13 @@ def make_request(
         "Accept": "application/json",
         "User-Agent": "InvestIQ-ProductionSmokeTest/1.0",
     }
+    if bypass:
+        headers["x-vercel-protection-bypass"] = bypass
     if cookie:
         # Support either full cookie string or raw token
         cookie_header = cookie if "=" in cookie else f"investiq_session={cookie}"
         headers["Cookie"] = cookie_header
+
 
     body_bytes = None
     if data is not None:
@@ -72,7 +80,7 @@ def make_request(
         return 0, {"error": str(e)}
 
 
-def run_smoke_test(base_url: str, cookie: str):
+def run_smoke_test(base_url: str, cookie: str, bypass: str = ""):
     clean_url = base_url.rstrip("/")
     print("=" * 75)
     print("INVEST IQ PRODUCTION POST-DEPLOYMENT SMOKE TEST")
@@ -87,13 +95,28 @@ def run_smoke_test(base_url: str, cookie: str):
     # -----------------------------------------------------------------------
     print("\n[TEST 1] Verifying Next.js -> Flask Agent Bridge...")
     bridge_url = f"{clean_url}/api/agents/test-bridge"
-    status, res = make_request(bridge_url, method="GET", cookie=cookie)
-    if status == 200 and (res.get("success") or res.get("status") == "ok" or res.get("bridge") == "connected"):
+    status, res = make_request(bridge_url, method="GET", cookie=cookie, bypass=bypass)
+    flask_resp = res.get("flaskResponse") or {}
+    is_healthy = (
+        status == 200
+        and (
+            res.get("bridgeStatus") == 200
+            or res.get("success")
+            or res.get("status") == "ok"
+            or res.get("bridge") == "connected"
+            or flask_resp.get("status") == "healthy"
+            or flask_resp.get("success") is True
+        )
+    )
+    if is_healthy:
         print("  ✓ PASS: Agent Bridge is connected and healthy (HTTP 200).")
+        print(f"    - Flask Endpoint: {res.get('flaskUrl')}")
+        print(f"    - Service: {flask_resp.get('service', 'Flask Agent Engine')}")
         passes += 1
     else:
         print(f"  ✗ FAIL: Bridge check returned HTTP {status}: {json.dumps(res)}")
         failures += 1
+
 
     # -----------------------------------------------------------------------
     # TEST 2: Research Agent Multi-Tool Query
@@ -105,6 +128,7 @@ def run_smoke_test(base_url: str, cookie: str):
         method="POST",
         data={"question": "What is the 14-day RSI and volume setup for RELIANCE.NS?"},
         cookie=cookie,
+        bypass=bypass,
     )
     if status == 200 and res.get("success") and "answer" in res:
         print("  ✓ PASS: Research Agent answered successfully.")
@@ -121,7 +145,7 @@ def run_smoke_test(base_url: str, cookie: str):
         failures += 1
 
     # -----------------------------------------------------------------------
-    # TEST 3: Watchdog Behavioral Guardrail & Warning Case
+    # TEST 3: Watchdog Behavioral Guardrail & Pre-Trade Case
     # -----------------------------------------------------------------------
     print("\n[TEST 3] Testing Watchdog Pre-Trade Evaluation...")
     trade_url = f"{clean_url}/api/user/trade"
@@ -131,16 +155,33 @@ def run_smoke_test(base_url: str, cookie: str):
         method="POST",
         data={"symbol": "INFY.NS", "type": "BUY", "shares": 1, "price": 1800.0},
         cookie=cookie,
+        bypass=bypass,
     )
-    if status in (200, 403):
-        if status == 403 and res.get("flagged"):
-            print(f"  ✓ PASS: Watchdog guardrail actively intercepted trade (Severity: {res.get('severity', 'block')}).")
-        else:
-            print("  ✓ PASS: Trade evaluated successfully through pre-trade watchdog pipeline.")
+    if status == 200 and res.get("warning") and res.get("requiresConfirmation"):
+        print(f"  ✓ PASS: Watchdog issued soft behavioral warning: {res.get('message')}")
+        print("    - Confirming trade past warning with confirmedWarning: true...")
+        status, res = make_request(
+            trade_url,
+            method="POST",
+            data={"symbol": "INFY.NS", "type": "BUY", "shares": 1, "price": 1800.0, "confirmedWarning": True},
+            cookie=cookie,
+            bypass=bypass,
+        )
+    if status == 200 and (res.get("success") or res.get("trade")):
+        print("  ✓ PASS: Trade evaluated and executed successfully through pre-trade watchdog pipeline (HTTP 200).")
+        if res.get("trade"):
+            print(f"    - Trade ID: {res.get('trade', {}).get('id')} | Size: {res.get('trade', {}).get('shares')} @ ₹{res.get('trade', {}).get('price')}")
         passes += 1
+    elif status == 403 and (res.get("blocked") or res.get("flagged")):
+        print(f"  ✓ PASS: Watchdog guardrail actively intercepted trade (Severity: block): {res.get('message')}")
+        passes += 1
+    elif status == 401:
+        print(f"  ✗ FAIL: Authentication or deployment protection failure on trade (HTTP 401): {json.dumps(res)}")
+        failures += 1
     else:
         print(f"  ✗ FAIL: Trade endpoint returned unexpected status HTTP {status}: {json.dumps(res)}")
         failures += 1
+
 
     # -----------------------------------------------------------------------
     # TEST 4: Watchdog Invariant: SELL Orders Are NEVER Blocked
@@ -152,22 +193,50 @@ def run_smoke_test(base_url: str, cookie: str):
         method="POST",
         data={"symbol": "INFY.NS", "type": "SELL", "shares": 1, "price": 1800.0},
         cookie=cookie,
+        bypass=bypass,
     )
-    # A sell should either succeed (200) or fail due to insufficient shares (400),
-    # but NEVER be blocked by a Watchdog reflection cooldown (403 block).
-    if status != 403 or not (res.get("rule_triggered") == "REFLECTION_LOCK"):
-        print(f"  ✓ PASS: SELL trade is NOT blocked by reflection cooldown (HTTP {status}).")
+    if status == 200 and res.get("warning") and res.get("requiresConfirmation"):
+        print(f"  - Watchdog soft warning received on SELL, confirming past prompt...")
+        status, res = make_request(
+            trade_url,
+            method="POST",
+            data={"symbol": "INFY.NS", "type": "SELL", "shares": 1, "price": 1800.0, "confirmedWarning": True},
+            cookie=cookie,
+            bypass=bypass,
+        )
+
+    # The SELL trade must prove that the trade reached the execution engine without being blocked.
+    # Expected valid outcomes:
+    # 1. HTTP 200 with success=true (trade executed and recorded in portfolio ledger)
+    # 2. HTTP 400 with "insufficient shares" (trade reached portfolio engine past Watchdog, rejected only by inventory check)
+    # Any other status (401 Auth/Vercel firewall, 403 Watchdog Block, 500/502/503 server error) MUST FAIL.
+    if status == 200 and (res.get("success") or res.get("trade")):
+        print(f"  ✓ PASS: SELL trade executed successfully without restriction (HTTP 200 OK).")
+        print(f"    - Message: {res.get('message')}")
+        if res.get("trade"):
+            print(f"    - Trade ID: {res.get('trade', {}).get('id')} | Amount: ₹{res.get('trade', {}).get('amount')}")
         passes += 1
-    else:
-        print(f"  ✗ FAIL: Invariant violation: SELL trade was blocked by cooldown lock: {json.dumps(res)}")
+    elif status == 400 and ("insufficient" in res.get("message", "").lower() or "shares" in res.get("message", "").lower()):
+        print(f"  ✓ PASS: SELL trade passed Watchdog and reached portfolio engine (HTTP 400: {res.get('message')}).")
+        passes += 1
+    elif status == 403:
+        print(f"  ✗ FAIL: Invariant violation: SELL trade was BLOCKED by guardrails (HTTP 403): {json.dumps(res)}")
         failures += 1
+    elif status == 401:
+        print(f"  ✗ FAIL: Authentication or deployment protection failure (HTTP 401): {json.dumps(res)}")
+        failures += 1
+    else:
+        print(f"  ✗ FAIL: SELL trade failed unexpectedly with HTTP {status}: {json.dumps(res)}")
+        failures += 1
+
+
 
     # -----------------------------------------------------------------------
     # TEST 5: Lesson-Sequencing Recommendation
     # -----------------------------------------------------------------------
     print("\n[TEST 5] Testing Adaptive Lesson-Sequencing Agent (/api/agents/next-lesson)...")
     lesson_url = f"{clean_url}/api/agents/next-lesson"
-    status, res = make_request(lesson_url, method="GET", cookie=cookie)
+    status, res = make_request(lesson_url, method="GET", cookie=cookie, bypass=bypass)
     if status == 200 and res.get("success") and res.get("recommended_lesson_id"):
         print("  ✓ PASS: Lesson Agent generated personalized curriculum recommendation.")
         print(f"    - Recommended Lesson: {res.get('recommended_lesson_id')} ({res.get('lesson_title')})")
@@ -197,6 +266,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Invest IQ Production Smoke Test")
     parser.add_argument("--url", required=True, help="Production base URL (e.g. https://investiq.vercel.app)")
     parser.add_argument("--cookie", required=True, help="Active user session cookie value (investiq_session=...)")
+    parser.add_argument("--bypass", default="", help="Vercel Protection Bypass secret header value if enabled")
     args = parser.parse_args()
 
-    sys.exit(run_smoke_test(args.url, args.cookie))
+    sys.exit(run_smoke_test(args.url, args.cookie, args.bypass))
+
