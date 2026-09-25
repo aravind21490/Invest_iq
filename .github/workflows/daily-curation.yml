@@ -22,6 +22,7 @@ jobs:
           SECRET_APP_URL: ${{ secrets.APP_URL }}
           VAR_APP_URL: ${{ vars.APP_URL }}
           AGENT_SERVICE_SECRET: ${{ secrets.AGENT_SERVICE_SECRET }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }} # ADDED
         run: |
           # 1. Resolve APP_URL from dispatch input, secret, or repository variable
           APP_URL="${INPUT_URL:-${SECRET_APP_URL:-$VAR_APP_URL}}"
@@ -45,6 +46,10 @@ jobs:
           if [ -z "$AGENT_SERVICE_SECRET" ]; then
             echo "::warning::AGENT_SERVICE_SECRET is not set in GitHub Secrets. The /api/agents/curate endpoint may reject requests with 401 Unauthorized unless authentication is disabled."
           fi
+
+          if [ -z "$VERCEL_BYPASS_SECRET" ]; then
+            echo "::warning::VERCEL_BYPASS_SECRET is not set. If Vercel Deployment Protection is enabled on this domain, requests will be blocked before they reach the API route." # ADDED
+          fi
           
           TARGET_ENDPOINT="$APP_URL/api/agents/curate"
           echo "Triggering daily batch watchlist curation at $TARGET_ENDPOINT..."
@@ -58,6 +63,7 @@ jobs:
           HTTP_OUTPUT=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET_ENDPOINT" \
             -H "Content-Type: application/json" \
             -H "X-Agent-Service-Key: $AGENT_SERVICE_SECRET" \
+            -H "x-vercel-protection-bypass: $VERCEL_BYPASS_SECRET" \
             -d '{"batch": true}' \
             --connect-timeout 30 \
             --max-time 180 \
