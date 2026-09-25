@@ -103,3 +103,27 @@ This guide details how to deploy **Invest IQ** to the cloud with **₹0 cost (10
 - [ ] **Technical Charts**: Open any stock (e.g. `/stock/RELIANCE.NS`) to verify candlestick rendering, RSI, MACD, and Bollinger matrix.
 - [ ] **Zerodha Kite Bridge**: Check `/settings/broker` and execute a practice trade with the human-approval modal confirmation.
 - [ ] **Free Tier Sleep/Wake**: Free tier instances on Render spin down after 15 minutes of inactivity; the first request after idle takes ~30 seconds to wake up.
+
+---
+
+## ⏰ Part 3: Automated Daily Watchlist Curation (GitHub Actions)
+
+Invest IQ includes an automated GitHub Actions cron workflow (`.github/workflows/daily-curation.yml`) that executes daily at **08:30 AM IST (03:00 UTC)**, prior to NSE market open.
+
+### Required GitHub Secrets & Variables
+To enable automated curation, configure these in your GitHub repository under **Settings** ➔ **Secrets and variables** ➔ **Actions**:
+
+1. **`APP_URL`** *(Secret or Repository Variable)*:
+   - Your publicly accessible backend or frontend URL.
+   - Example: `https://investiq-backend.onrender.com` or `https://your-frontend.vercel.app`
+   - *Note: Do NOT set this to `http://127.0.0.1:3000` or `localhost`, as GitHub Actions runners run in cloud VMs where local services cannot be reached.*
+
+2. **`AGENT_SERVICE_SECRET`** *(Secret)*:
+   - The shared authentication secret used to protect the `/api/agents/curate` endpoint.
+   - Must match the `AGENT_SERVICE_SECRET` environment variable configured in your Render / Vercel service and `.env`.
+
+### Manual Trigger & Testing
+You can manually run the curator at any time:
+1. Go to your GitHub repository's **Actions** tab.
+2. Select **Daily Watchlist Curation** in the left sidebar.
+3. Click **Run workflow** (optionally supply a temporary override target URL).

@@ -5,6 +5,11 @@ on:
     # 03:00 UTC (08:30 AM IST) Monday through Friday (prior to NSE market open)
     - cron: '0 3 * * 1-5'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+    inputs:
+      target_url:
+        description: 'Optional override application URL (e.g., https://your-backend.onrender.com)'
+        required: false
+        default: ''
 
 jobs:
   run-curation:
@@ -13,18 +18,69 @@ jobs:
     steps:
       - name: Trigger Batch Watchlist Curation
         env:
-          APP_URL: ${{ secrets.APP_URL || 'http://127.0.0.1:3000' }}
+          INPUT_URL: ${{ github.event.inputs.target_url }}
+          SECRET_APP_URL: ${{ secrets.APP_URL }}
+          VAR_APP_URL: ${{ vars.APP_URL }}
           AGENT_SERVICE_SECRET: ${{ secrets.AGENT_SERVICE_SECRET }}
         run: |
-          echo "Triggering daily batch watchlist curation at $APP_URL/api/agents/curate..."
+          # 1. Resolve APP_URL from dispatch input, secret, or repository variable
+          APP_URL="${INPUT_URL:-${SECRET_APP_URL:-$VAR_APP_URL}}"
           
-          HTTP_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$APP_URL/api/agents/curate" \
+          # Trim whitespace and remove trailing slashes
+          APP_URL="$(echo "$APP_URL" | xargs | sed 's:/*$::')"
+          
+          echo "Evaluating APP_URL configuration..."
+          
+          # 2. Validate APP_URL
+          if [ -z "$APP_URL" ]; then
+            echo "::error::APP_URL is not set. Please add APP_URL to your GitHub Repository Secrets or Variables (Settings -> Secrets and variables -> Actions) with your deployed backend URL (e.g., https://investiq-backend.onrender.com or https://your-app.vercel.app)."
+            exit 1
+          fi
+          
+          if [[ "$APP_URL" =~ ^https?://(localhost|127\.0\.0\.1)(:[0-9]+)? ]]; then
+            echo "::error::APP_URL is set to localhost ($APP_URL). GitHub Actions runners run in cloud VMs where local servers are not active. Please set APP_URL in GitHub Secrets or Variables to your public deployed URL (e.g., on Render or Vercel)."
+            exit 1
+          fi
+          
+          if [ -z "$AGENT_SERVICE_SECRET" ]; then
+            echo "::warning::AGENT_SERVICE_SECRET is not set in GitHub Secrets. The /api/agents/curate endpoint may reject requests with 401 Unauthorized unless authentication is disabled."
+          fi
+          
+          TARGET_ENDPOINT="$APP_URL/api/agents/curate"
+          echo "Triggering daily batch watchlist curation at $TARGET_ENDPOINT..."
+          
+          # 3. Execute curl with resilience (connection timeouts, cold-start retries for Render free tier)
+          # -sS: Silent progress, but print connection error messages
+          # --connect-timeout 30: Wait up to 30s to connect
+          # --max-time 180: Wait up to 3m for batch scanning to finish
+          # --retry 3 --retry-delay 10 --retry-connrefused: Auto-retry in case backend is waking from sleep
+          CURL_EXIT=0
+          HTTP_OUTPUT=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET_ENDPOINT" \
             -H "Content-Type: application/json" \
             -H "X-Agent-Service-Key: $AGENT_SERVICE_SECRET" \
-            -d '{"batch": true}')
+            -d '{"batch": true}' \
+            --connect-timeout 30 \
+            --max-time 180 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-connrefused 2>&1) || CURL_EXIT=$?
           
-          BODY=$(echo "$HTTP_RESPONSE" | sed -e '$d')
-          STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTP_STATUS://')
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error::Curl failed to reach $TARGET_ENDPOINT with exit code $CURL_EXIT."
+            echo "Curl output:"
+            echo "$HTTP_OUTPUT"
+            if [ "$CURL_EXIT" -eq 7 ]; then
+              echo "::error::(Exit Code 7: Could not connect to host. The server at $APP_URL is offline, unreachable, or port is closed.)"
+            elif [ "$CURL_EXIT" -eq 28 ]; then
+              echo "::error::(Exit Code 28: Operation timeout. The server took longer than 180 seconds to respond.)"
+            elif [ "$CURL_EXIT" -eq 6 ]; then
+              echo "::error::(Exit Code 6: Could not resolve host. Verify the domain in $APP_URL is correct.)"
+            fi
+            exit 1
+          fi
+          
+          BODY=$(echo "$HTTP_OUTPUT" | sed -e '$d')
+          STATUS=$(echo "$HTTP_OUTPUT" | tr -d '\n' | sed -e 's/.*HTTP_STATUS://')
           
           echo "Response Status: $STATUS"
           echo "Response Body: $BODY"
