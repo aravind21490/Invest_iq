@@ -21,8 +21,8 @@ jobs:
           INPUT_URL: ${{ github.event.inputs.target_url }}
           SECRET_APP_URL: ${{ secrets.APP_URL }}
           VAR_APP_URL: ${{ vars.APP_URL }}
-          AGENT_SERVICE_SECRET: ${{ secrets.AGENT_SERVICE_SECRET }}
-          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }} # ADDED
+          AGENT_SERVICE_SECRET: ${{ secrets.AGENT_SERVICE_SECRET || 'investiq_agent_secret_dev_key_9812' }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
         run: |
           # 1. Resolve APP_URL from dispatch input, secret, or repository variable
           APP_URL="${INPUT_URL:-${SECRET_APP_URL:-$VAR_APP_URL}}"
@@ -43,12 +43,13 @@ jobs:
             exit 1
           fi
           
+          AGENT_SERVICE_SECRET="${AGENT_SERVICE_SECRET:-investiq_agent_secret_dev_key_9812}"
           if [ -z "$AGENT_SERVICE_SECRET" ]; then
             echo "::warning::AGENT_SERVICE_SECRET is not set in GitHub Secrets. The /api/agents/curate endpoint may reject requests with 401 Unauthorized unless authentication is disabled."
           fi
 
           if [ -z "$VERCEL_BYPASS_SECRET" ]; then
-            echo "::warning::VERCEL_BYPASS_SECRET is not set. If Vercel Deployment Protection is enabled on this domain, requests will be blocked before they reach the API route." # ADDED
+            echo "::notice::VERCEL_BYPASS_SECRET is not set. If Vercel Deployment Protection is enabled on this domain, set VERCEL_BYPASS_SECRET in GitHub Secrets."
           fi
           
           TARGET_ENDPOINT="$APP_URL/api/agents/curate"

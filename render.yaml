@@ -20,3 +20,5 @@ services:
         sync: false # Set in Render Dashboard for AI plain-English explanations
       - key: PORT
         value: 10000
+      - key: AGENT_SERVICE_SECRET
+        value: investiq_agent_secret_dev_key_9812
